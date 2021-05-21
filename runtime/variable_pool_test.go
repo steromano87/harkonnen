@@ -6,6 +6,11 @@ import (
 	"testing"
 )
 
+func TestNewVariablePool(t *testing.T) {
+	vp := NewVariablePool(&ErrorHandler{})
+	assert.Implements(t, (*VariablesHandler)(nil), vp)
+}
+
 func TestVariablePool_SetGet(t *testing.T) {
 	vp := NewVariablePool(&ErrorHandler{})
 	vp.Set("test", "testValue")
