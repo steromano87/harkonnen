@@ -1,10 +1,11 @@
-package http
+package httpp_test
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"harkonnen/errors"
+	"harkonnen/httpp"
 	"harkonnen/runtime"
 	"harkonnen/telemetry"
 	"io/ioutil"
@@ -16,18 +17,18 @@ import (
 
 type SamplerTestSuite struct {
 	suite.Suite
-	settings        *Settings
+	settings        *httpp.Settings
 	errorHandler    *runtime.ErrorHandler
 	sampleCollector *runtime.SampleCollector
-	sampler         *Sampler
+	sampler         *httpp.Sampler
 	testServer      *httptest.Server
 }
 
 func (suite *SamplerTestSuite) SetupTest() {
-	suite.settings = NewSettings()
+	suite.settings = httpp.NewSettings()
 	suite.errorHandler = &runtime.ErrorHandler{}
 	suite.sampleCollector = runtime.NewSampleCollector()
-	suite.sampler = NewSampler(suite.errorHandler, suite.sampleCollector, suite.settings)
+	suite.sampler = httpp.NewSampler(suite.errorHandler, suite.sampleCollector, suite.settings)
 
 	handler := http.NewServeMux()
 
@@ -64,7 +65,7 @@ func (suite *SamplerTestSuite) TearDownTest() {
 }
 
 func (suite *SamplerTestSuite) TestNewSampler() {
-	assert.IsType(suite.T(), &Sampler{}, suite.sampler)
+	assert.IsType(suite.T(), &httpp.Sampler{}, suite.sampler)
 }
 
 func (suite *SamplerTestSuite) TestGetRequest() {
@@ -76,8 +77,8 @@ func (suite *SamplerTestSuite) TestGetRequest() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(Sample)
+		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(httpp.Sample)
 			assert.Equal(suite.T(), "GET", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -112,8 +113,8 @@ func (suite *SamplerTestSuite) TestGetRequestWithQueryString() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(Sample)
+		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(httpp.Sample)
 			assert.Equal(suite.T(), "GET", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), parameters, sample.Info.Parameters)
@@ -145,8 +146,8 @@ func (suite *SamplerTestSuite) TestPostNoBody() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(Sample)
+		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(httpp.Sample)
 			assert.Equal(suite.T(), "POST", sample.Info.Method)
 			// TODO: check if it is better to separate URL from querystring in the Sample
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
@@ -178,8 +179,8 @@ func (suite *SamplerTestSuite) TestPutNoBody() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(Sample)
+		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(httpp.Sample)
 			assert.Equal(suite.T(), "PUT", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -210,8 +211,8 @@ func (suite *SamplerTestSuite) TestPatchNoBody() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(Sample)
+		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(httpp.Sample)
 			assert.Equal(suite.T(), "PATCH", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -242,8 +243,8 @@ func (suite *SamplerTestSuite) TestDeleteNoBody() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(Sample)
+		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(httpp.Sample)
 			assert.Equal(suite.T(), "DELETE", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -276,8 +277,8 @@ func (suite *SamplerTestSuite) TestPostFormRequest() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(Sample)
+		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(httpp.Sample)
 			assert.Equal(suite.T(), "POST", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -309,7 +310,7 @@ func (suite *SamplerTestSuite) TestRequestMalformedUrl() {
 }
 
 func (suite *SamplerTestSuite) TestRequestInvalidPartialUrl() {
-	settings := NewSettings()
+	settings := httpp.NewSettings()
 	settings.BaseUrl = suite.testServer.URL
 	suite.sampler.UpdateSettings(settings)
 
@@ -322,7 +323,7 @@ func (suite *SamplerTestSuite) TestRequestInvalidPartialUrl() {
 }
 
 func (suite *SamplerTestSuite) TestRequestPartialMalformedUrl() {
-	settings := NewSettings()
+	settings := httpp.NewSettings()
 	settings.BaseUrl = "https:// my malformed base URL"
 	suite.sampler.UpdateSettings(settings)
 
@@ -335,7 +336,7 @@ func (suite *SamplerTestSuite) TestRequestPartialMalformedUrl() {
 }
 
 func (suite *SamplerTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() {
-	settings := NewSettings()
+	settings := httpp.NewSettings()
 	settings.FollowRedirects = false
 	settings.BaseUrl = suite.testServer.URL
 	suite.sampler.UpdateSettings(settings)
@@ -347,7 +348,7 @@ func (suite *SamplerTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() 
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		sample := collectedSamples[0].(Sample)
+		sample := collectedSamples[0].(httpp.Sample)
 		assert.Equal(suite.T(), suite.testServer.URL+"/redirect", sample.Info.URL.String())
 
 		responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
@@ -361,7 +362,7 @@ func (suite *SamplerTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() 
 }
 
 func (suite *SamplerTestSuite) TestRequestWithRedirect_WithRedirectSetting() {
-	settings := NewSettings()
+	settings := httpp.NewSettings()
 	settings.FollowRedirects = true
 	settings.BaseUrl = suite.testServer.URL
 	suite.sampler.UpdateSettings(settings)
@@ -373,7 +374,7 @@ func (suite *SamplerTestSuite) TestRequestWithRedirect_WithRedirectSetting() {
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		sample := collectedSamples[0].(Sample)
+		sample := collectedSamples[0].(httpp.Sample)
 		assert.Equal(suite.T(), suite.testServer.URL+"/redirect", sample.Info.URL.String())
 		assert.True(suite.T(), sample.Info.IsRedirect)
 		assert.Equal(suite.T(), suite.testServer.URL+"/redirected", sample.Info.FinalURL.String())

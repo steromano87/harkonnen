@@ -1,4 +1,4 @@
-package http
+package httpp
 
 import (
 	"time"
@@ -11,6 +11,18 @@ type Sample struct {
 	sentBytes     int64
 	receivedBytes int64
 	Info          SampleInfo
+}
+
+func NewSample(name string, start time.Time, end time.Time, sentBytes int64, receivedBytes int64, info SampleInfo) *Sample {
+	sample := new(Sample)
+	sample.name = name
+	sample.start = start
+	sample.end = end
+	sample.sentBytes = sentBytes
+	sample.receivedBytes = receivedBytes
+	sample.Info = info
+
+	return sample
 }
 
 func (sample Sample) Name() string {

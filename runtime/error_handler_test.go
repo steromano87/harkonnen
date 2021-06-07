@@ -1,13 +1,14 @@
-package runtime
+package runtime_test
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"harkonnen/runtime"
 	"testing"
 )
 
 func TestErrorHandler_Capture_GetCollected_Single(t *testing.T) {
-	handler := ErrorHandler{}
+	handler := runtime.ErrorHandler{}
 	err := fmt.Errorf("sample error: %v", "example")
 	handler.Capture(err)
 	collectedErrors := handler.GetCollected()
@@ -18,7 +19,7 @@ func TestErrorHandler_Capture_GetCollected_Single(t *testing.T) {
 }
 
 func TestErrorHandler_Capture_GetCollected_Nil(t *testing.T) {
-	handler := ErrorHandler{}
+	handler := runtime.ErrorHandler{}
 	handler.Capture(nil)
 	collectedErrors := handler.GetCollected()
 
@@ -26,7 +27,7 @@ func TestErrorHandler_Capture_GetCollected_Nil(t *testing.T) {
 }
 
 func TestErrorHandler_Capture_GetCollected_Multiple(t *testing.T) {
-	handler := ErrorHandler{}
+	handler := runtime.ErrorHandler{}
 	err1 := fmt.Errorf("first sample error: %v", "example")
 	handler.Capture(err1)
 	err2 := fmt.Errorf("second sample error: %v", "example")

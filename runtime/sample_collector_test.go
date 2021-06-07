@@ -1,8 +1,9 @@
-package runtime
+package runtime_test
 
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"harkonnen/runtime"
 	"testing"
 	"time"
 )
@@ -36,15 +37,15 @@ func (mocked MockedSample) ReceivedBytes() int64 {
 }
 
 func TestNewSampleCollector(t *testing.T) {
-	collector := NewSampleCollector()
-	assert.IsType(t, &SampleCollector{}, collector)
+	collector := runtime.NewSampleCollector()
+	assert.IsType(t, &runtime.SampleCollector{}, collector)
 
 	flushedSamples := collector.Flush()
 	assert.Empty(t, flushedSamples, "Flushing unused sample collector should give no collected samples")
 }
 
 func TestSampleCollector_CollectFlush(t *testing.T) {
-	collector := NewSampleCollector()
+	collector := runtime.NewSampleCollector()
 	mockedSample := MockedSample{}
 	collector.Collect(mockedSample)
 

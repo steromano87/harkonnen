@@ -1,12 +1,13 @@
-package errors
+package errors_test
 
 import (
 	"github.com/stretchr/testify/assert"
+	"harkonnen/errors"
 	"testing"
 )
 
 func TestVariableCast_Error(t *testing.T) {
-	myError := &VariableCast{
+	myError := &errors.VariableCast{
 		Name:     "variableName",
 		CastType: "int",
 		RawValue: "true",
