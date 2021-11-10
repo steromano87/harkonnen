@@ -7,10 +7,10 @@ import (
 
 type VariablePool struct {
 	variables    map[string]interface{}
-	errorHandler *ErrorHandler
+	errorHandler *ErrorCollector
 }
 
-func NewVariablePool(errorHandler *ErrorHandler) *VariablePool {
+func NewVariablePool(errorHandler *ErrorCollector) *VariablePool {
 	pool := new(VariablePool)
 	pool.variables = make(map[string]interface{})
 	pool.errorHandler = errorHandler

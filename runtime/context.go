@@ -1,22 +1,21 @@
-package load
+package runtime
 
 import (
 	"context"
-	"harkonnen/runtime"
 )
 
 type Context struct {
 	context.Context
-	*runtime.VariablePool
-	*runtime.ErrorHandler
-	*runtime.SampleCollector
+	*VariablePool
+	*ErrorCollector
+	*SampleCollector
 	cancelFunc context.CancelFunc
 }
 
-func NewContext(parent context.Context, variablePool *runtime.VariablePool, errorHandler *runtime.ErrorHandler, sampleCollector *runtime.SampleCollector) *Context {
+func NewContext(parent context.Context, variablePool *VariablePool, errorHandler *ErrorCollector, sampleCollector *SampleCollector) *Context {
 	output := new(Context)
 	output.VariablePool = variablePool
-	output.ErrorHandler = errorHandler
+	output.ErrorCollector = errorHandler
 	output.SampleCollector = sampleCollector
 
 	output.Context, output.cancelFunc = context.WithCancel(parent)

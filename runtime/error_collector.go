@@ -1,19 +1,19 @@
 package runtime
 
-type ErrorHandler struct {
+type ErrorCollector struct {
 	collectedErrors []error
 }
 
-func (handler *ErrorHandler) Capture(err error) {
+func (handler *ErrorCollector) Capture(err error) {
 	if err != nil {
 		handler.collectedErrors = append(handler.collectedErrors, err)
 	}
 }
 
-func (handler *ErrorHandler) GetCollected() []error {
+func (handler *ErrorCollector) GetCollected() []error {
 	return handler.collectedErrors
 }
 
-func (handler ErrorHandler) HasErrors() bool {
+func (handler ErrorCollector) HasErrors() bool {
 	return len(handler.collectedErrors) > 0
 }
