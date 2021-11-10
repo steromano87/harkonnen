@@ -12,7 +12,7 @@ type Context struct {
 	cancelFunc context.CancelFunc
 }
 
-func NewContext(parent context.Context, variablePool *VariablePool, errorHandler *ErrorCollector, sampleCollector *SampleCollector) *Context {
+func NewContext(parent context.Context, variablePool *VariablePool, errorHandler *ErrorCollector, sampleCollector *SampleCollector) Context {
 	output := new(Context)
 	output.VariablePool = variablePool
 	output.ErrorCollector = errorHandler
@@ -20,7 +20,7 @@ func NewContext(parent context.Context, variablePool *VariablePool, errorHandler
 
 	output.Context, output.cancelFunc = context.WithCancel(parent)
 
-	return output
+	return *output
 }
 
 func (c *Context) Cancel() {
