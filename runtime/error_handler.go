@@ -13,3 +13,7 @@ func (handler *ErrorHandler) Capture(err error) {
 func (handler *ErrorHandler) GetCollected() []error {
 	return handler.collectedErrors
 }
+
+func (handler ErrorHandler) HasErrors() bool {
+	return len(handler.collectedErrors) > 0
+}

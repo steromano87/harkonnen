@@ -40,3 +40,11 @@ func TestErrorHandler_Capture_GetCollected_Multiple(t *testing.T) {
 		assert.Equal(t, err2, collectedErrors[1])
 	}
 }
+
+func TestErrorHandler_HasErrors(t *testing.T) {
+	handler := runtime.ErrorHandler{}
+	err := fmt.Errorf("sample error")
+	handler.Capture(err)
+
+	assert.True(t, handler.HasErrors())
+}
