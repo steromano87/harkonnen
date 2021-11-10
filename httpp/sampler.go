@@ -15,18 +15,16 @@ import (
 )
 
 type Sampler struct {
-	errorHandler    *runtime.ErrorHandler
-	settings        *Settings
-	sampleCollector *runtime.SampleCollector
-	innerClient     http.Client
-	lastResponse    *http.Response
+	context      runtime.Context
+	settings     *Settings
+	innerClient  http.Client
+	lastResponse *http.Response
 }
 
-func NewSampler(errorHandler *runtime.ErrorHandler, sampleCollector *runtime.SampleCollector, settings *Settings) *Sampler {
+func NewSampler(context runtime.Context, settings *Settings) *Sampler {
 	sampler := new(Sampler)
-	sampler.errorHandler = errorHandler
+	sampler.context = context
 	sampler.settings = settings
-	sampler.sampleCollector = sampleCollector
 	sampler.buildInnerClient()
 
 	return sampler
@@ -65,11 +63,11 @@ func (sampler *Sampler) Request(method string, url string, parameters *url.Value
 	completeUrl, err := sampler.composeUrl(url)
 
 	if err != nil {
-		sampler.errorHandler.Capture(err)
+		sampler.context.Capture(err)
 	} else {
 		completeUrl := sampler.composeQueryString(completeUrl, parameters)
 		request, err := http.NewRequest(method, completeUrl.String(), body)
-		sampler.errorHandler.Capture(err)
+		sampler.context.Capture(err)
 
 		if contentType != "" {
 			request.Header.Set("Content-Type", contentType)
@@ -119,7 +117,7 @@ func (sampler *Sampler) composeUrl(url string) (*url.URL, error) {
 	}
 
 	if !strings.HasPrefix(url, "/") {
-		sampler.errorHandler.Capture(errors.InvalidPartialUrl{Url: url})
+		sampler.context.Capture(errors.InvalidPartialUrl{Url: url})
 	}
 
 	returnUrl, err := sampler.parseUrl(sampler.settings.BaseUrl + url)
@@ -129,7 +127,7 @@ func (sampler *Sampler) composeUrl(url string) (*url.URL, error) {
 func (sampler *Sampler) parseUrl(rawUrl string) (*url.URL, error) {
 	parsedUrl, err := url.Parse(rawUrl)
 	if err != nil {
-		sampler.errorHandler.Capture(errors.MalformedUrl{Url: rawUrl})
+		sampler.context.Capture(errors.MalformedUrl{Url: rawUrl})
 	}
 
 	return parsedUrl, err
@@ -156,7 +154,7 @@ func (sampler *Sampler) sendRequest(request *http.Request) {
 	response, err := sampler.innerClient.Do(request)
 	endTime := time.Now()
 
-	sampler.errorHandler.Capture(err)
+	sampler.context.Capture(err)
 
 	// Calculate request and response size
 	sentBytes, receivedBytes := sampler.calculateSentReceivedBytes(response)
@@ -193,7 +191,7 @@ func (sampler *Sampler) sendRequest(request *http.Request) {
 		Info:          info,
 	}
 
-	sampler.sampleCollector.Collect(sample)
+	sampler.context.Collect(sample)
 	sampler.lastResponse = response
 }
 
@@ -203,7 +201,7 @@ func (sampler *Sampler) calculateSentReceivedBytes(response *http.Response) (int
 
 	// Calculate request header size in bytes
 	requestHeader, err := httputil.DumpRequestOut(request, false)
-	sampler.errorHandler.Capture(err)
+	sampler.context.Capture(err)
 	requestHeaderSize := int64(len(requestHeader))
 
 	// Calculate request body size in bytes
@@ -216,12 +214,12 @@ func (sampler *Sampler) calculateSentReceivedBytes(response *http.Response) (int
 		backupWriter := ioutil.NopCloser(bytes.NewBuffer(bodyBuffer))
 		requestBodySize, err = io.Copy(io.Discard, countWriter)
 		request.Body = backupWriter
-		sampler.errorHandler.Capture(err)
+		sampler.context.Capture(err)
 	}
 
 	// Calculate response header size in bytes
 	responseHeader, err := httputil.DumpResponse(response, false)
-	sampler.errorHandler.Capture(err)
+	sampler.context.Capture(err)
 	responseHeaderSize := int64(len(responseHeader))
 
 	// Calculate response body size in bytes
@@ -234,7 +232,7 @@ func (sampler *Sampler) calculateSentReceivedBytes(response *http.Response) (int
 		backupWriter := ioutil.NopCloser(bytes.NewBuffer(bodyBuffer))
 		responseBodySize, err = io.Copy(io.Discard, countWriter)
 		response.Body = backupWriter
-		sampler.errorHandler.Capture(err)
+		sampler.context.Capture(err)
 	}
 
 	return requestHeaderSize + requestBodySize, responseHeaderSize + responseBodySize

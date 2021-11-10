@@ -1,13 +1,13 @@
 package httpp_test
 
 import (
+	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"harkonnen/errors"
 	"harkonnen/httpp"
 	"harkonnen/runtime"
-	"harkonnen/telemetry"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -18,17 +18,19 @@ import (
 type SamplerTestSuite struct {
 	suite.Suite
 	settings        *httpp.Settings
-	errorHandler    *runtime.ErrorHandler
+	errorHandler    *runtime.ErrorCollector
 	sampleCollector *runtime.SampleCollector
+	context         runtime.Context
 	sampler         *httpp.Sampler
 	testServer      *httptest.Server
 }
 
 func (suite *SamplerTestSuite) SetupTest() {
 	suite.settings = httpp.NewSettings()
-	suite.errorHandler = &runtime.ErrorHandler{}
+	suite.errorHandler = &runtime.ErrorCollector{}
 	suite.sampleCollector = runtime.NewSampleCollector()
-	suite.sampler = httpp.NewSampler(suite.errorHandler, suite.sampleCollector, suite.settings)
+	suite.context = runtime.NewContext(context.Background(), runtime.NewVariablePool(suite.errorHandler), suite.errorHandler, suite.sampleCollector)
+	suite.sampler = httpp.NewSampler(suite.context, suite.settings)
 
 	handler := http.NewServeMux()
 
@@ -75,7 +77,7 @@ func (suite *SamplerTestSuite) TestGetRequest() {
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(httpp.Sample)
@@ -111,7 +113,7 @@ func (suite *SamplerTestSuite) TestGetRequestWithQueryString() {
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(httpp.Sample)
@@ -144,7 +146,7 @@ func (suite *SamplerTestSuite) TestPostNoBody() {
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(httpp.Sample)
@@ -177,7 +179,7 @@ func (suite *SamplerTestSuite) TestPutNoBody() {
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(httpp.Sample)
@@ -209,7 +211,7 @@ func (suite *SamplerTestSuite) TestPatchNoBody() {
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(httpp.Sample)
@@ -241,7 +243,7 @@ func (suite *SamplerTestSuite) TestDeleteNoBody() {
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(httpp.Sample)
@@ -275,7 +277,7 @@ func (suite *SamplerTestSuite) TestPostFormRequest() {
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(httpp.Sample)
