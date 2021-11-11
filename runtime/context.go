@@ -26,3 +26,7 @@ func NewContext(parent context.Context, variablePool *VariablePool, errorHandler
 func (c *Context) Cancel() {
 	c.cancelFunc()
 }
+
+func (c Context) NextLoop() <-chan struct{} {
+	return make(chan struct{})
+}
