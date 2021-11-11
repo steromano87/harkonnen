@@ -57,6 +57,12 @@ func (u *Unit) run() {
 		u.status = Error
 		return
 	}
+
+	if u.scheduledForShutdown {
+		u.status = Stopped
+	} else {
+		u.status = Completed
+	}
 }
 
 func (u *Unit) executeSetupScript() error {
