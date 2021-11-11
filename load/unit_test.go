@@ -56,6 +56,7 @@ func TestUnit_Start(t *testing.T) {
 	wg.Wait()
 	assert.Equal(t, 3, testUnit.TotalIterations())
 	assert.Equal(t, testUnit.TotalIterations(), testUnit.SuccessfulIterations())
+	assert.Equal(t, load.Completed, testUnit.Status())
 }
 
 func TestUnit_StartWithError(t *testing.T) {
@@ -81,4 +82,5 @@ func TestUnit_StartWithError(t *testing.T) {
 	assert.Equal(t, 3, testUnit.TotalIterations())
 	assert.Equal(t, 0, testUnit.SuccessfulIterations())
 	assert.True(t, testContext.HasErrors())
+	assert.Equal(t, load.Completed, testUnit.Status())
 }
