@@ -1,13 +1,20 @@
 package load_test
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 	"harkonnen/load"
 	"testing"
 	"time"
 )
 
-var testRamp, _ = load.NewRamp(8, "5s", "4s", "10s", "2s")
+var loadUnits = 8
+var initialDelay = "5s"
+var rampUpTime = "4s"
+var sustainTime = "10s"
+var rampDownTime = "2s"
+var testRamp, _ = load.NewRamp(loadUnits, initialDelay, rampUpTime, sustainTime, rampDownTime)
 
 func TestRampCreation(t *testing.T) {
 	assert.IsType(t, load.Ramp{}, testRamp)
@@ -46,4 +53,38 @@ func TestRamp_At_AfterCompletion(t *testing.T) {
 func TestRamp_TotalDuration(t *testing.T) {
 	elapsed, _ := time.ParseDuration("21s")
 	assert.Equal(t, elapsed, testRamp.TotalDuration())
+}
+
+func TestRamp_Marshalling(t *testing.T) {
+	output, err := yaml.Marshal(testRamp)
+
+	if assert.NoError(t, err) {
+		assert.Contains(t, string(output), fmt.Sprintf("load_units: %d", loadUnits))
+		assert.Contains(t, string(output), fmt.Sprintf("initial_delay: %s", initialDelay))
+		assert.Contains(t, string(output), fmt.Sprintf("ramp_up_time: %s", rampUpTime))
+		assert.Contains(t, string(output), fmt.Sprintf("sustain_time: %s", sustainTime))
+		assert.Contains(t, string(output), fmt.Sprintf("ramp_down_time: %s", rampDownTime))
+	}
+}
+
+func TestRamp_UnmarshalYAML(t *testing.T) {
+	output, _ := yaml.Marshal(testRamp)
+
+	var outputRamp load.Ramp
+	err := yaml.Unmarshal(output, &outputRamp)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, loadUnits, outputRamp.LoadUnits)
+
+		parsedInitialDelay, _ := time.ParseDuration(initialDelay)
+		parsedRampUpTime, _ := time.ParseDuration(rampUpTime)
+		parsedSustainTime, _ := time.ParseDuration(sustainTime)
+		parsedRampDownTime, _ := time.ParseDuration(rampDownTime)
+
+		assert.Equal(t, parsedInitialDelay, outputRamp.InitialDelay)
+		assert.Equal(t, parsedRampUpTime, outputRamp.RampUpTime)
+		assert.Equal(t, parsedSustainTime, outputRamp.SustainTime)
+		assert.Equal(t, parsedRampDownTime, outputRamp.RampDownTime)
+	}
+
 }
