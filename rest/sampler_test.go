@@ -1,4 +1,4 @@
-package httpp_test
+package rest_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"harkonnen/errors"
-	"harkonnen/httpp"
+	"harkonnen/rest"
 	"harkonnen/runtime"
 	"io/ioutil"
 	"net/http"
@@ -17,20 +17,20 @@ import (
 
 type SamplerTestSuite struct {
 	suite.Suite
-	settings        *httpp.Settings
+	settings        *rest.Settings
 	errorHandler    *runtime.ErrorCollector
 	sampleCollector *runtime.SampleCollector
 	context         runtime.Context
-	sampler         *httpp.Sampler
+	sampler         *rest.Sampler
 	testServer      *httptest.Server
 }
 
 func (suite *SamplerTestSuite) SetupTest() {
-	suite.settings = httpp.NewSettings()
+	suite.settings = rest.NewSettings()
 	suite.errorHandler = &runtime.ErrorCollector{}
 	suite.sampleCollector = runtime.NewSampleCollector()
 	suite.context = runtime.NewContext(context.Background(), runtime.NewVariablePool(suite.errorHandler), suite.errorHandler, suite.sampleCollector)
-	suite.sampler = httpp.NewSampler(suite.context, suite.settings)
+	suite.sampler = rest.NewSampler(suite.context, suite.settings)
 
 	handler := http.NewServeMux()
 
@@ -67,7 +67,7 @@ func (suite *SamplerTestSuite) TearDownTest() {
 }
 
 func (suite *SamplerTestSuite) TestNewSampler() {
-	assert.IsType(suite.T(), &httpp.Sampler{}, suite.sampler)
+	assert.IsType(suite.T(), &rest.Sampler{}, suite.sampler)
 }
 
 func (suite *SamplerTestSuite) TestGetRequest() {
@@ -79,8 +79,8 @@ func (suite *SamplerTestSuite) TestGetRequest() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(httpp.Sample)
+		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(rest.Sample)
 			assert.Equal(suite.T(), "GET", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -115,8 +115,8 @@ func (suite *SamplerTestSuite) TestGetRequestWithQueryString() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(httpp.Sample)
+		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(rest.Sample)
 			assert.Equal(suite.T(), "GET", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), parameters, sample.Info.Parameters)
@@ -148,8 +148,8 @@ func (suite *SamplerTestSuite) TestPostNoBody() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(httpp.Sample)
+		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(rest.Sample)
 			assert.Equal(suite.T(), "POST", sample.Info.Method)
 			// TODO: check if it is better to separate URL from querystring in the Sample
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
@@ -181,8 +181,8 @@ func (suite *SamplerTestSuite) TestPutNoBody() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(httpp.Sample)
+		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(rest.Sample)
 			assert.Equal(suite.T(), "PUT", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -213,8 +213,8 @@ func (suite *SamplerTestSuite) TestPatchNoBody() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(httpp.Sample)
+		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(rest.Sample)
 			assert.Equal(suite.T(), "PATCH", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -245,8 +245,8 @@ func (suite *SamplerTestSuite) TestDeleteNoBody() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(httpp.Sample)
+		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(rest.Sample)
 			assert.Equal(suite.T(), "DELETE", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -279,8 +279,8 @@ func (suite *SamplerTestSuite) TestPostFormRequest() {
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
 
-		if assert.IsType(suite.T(), httpp.Sample{}, collectedSamples[0]) {
-			sample := collectedSamples[0].(httpp.Sample)
+		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
+			sample := collectedSamples[0].(rest.Sample)
 			assert.Equal(suite.T(), "POST", sample.Info.Method)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
@@ -312,7 +312,7 @@ func (suite *SamplerTestSuite) TestRequestMalformedUrl() {
 }
 
 func (suite *SamplerTestSuite) TestRequestInvalidPartialUrl() {
-	settings := httpp.NewSettings()
+	settings := rest.NewSettings()
 	settings.BaseUrl = suite.testServer.URL
 	suite.sampler.UpdateSettings(settings)
 
@@ -325,7 +325,7 @@ func (suite *SamplerTestSuite) TestRequestInvalidPartialUrl() {
 }
 
 func (suite *SamplerTestSuite) TestRequestPartialMalformedUrl() {
-	settings := httpp.NewSettings()
+	settings := rest.NewSettings()
 	settings.BaseUrl = "https:// my malformed base URL"
 	suite.sampler.UpdateSettings(settings)
 
@@ -338,7 +338,7 @@ func (suite *SamplerTestSuite) TestRequestPartialMalformedUrl() {
 }
 
 func (suite *SamplerTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() {
-	settings := httpp.NewSettings()
+	settings := rest.NewSettings()
 	settings.FollowRedirects = false
 	settings.BaseUrl = suite.testServer.URL
 	suite.sampler.UpdateSettings(settings)
@@ -350,7 +350,7 @@ func (suite *SamplerTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() 
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		sample := collectedSamples[0].(httpp.Sample)
+		sample := collectedSamples[0].(rest.Sample)
 		assert.Equal(suite.T(), suite.testServer.URL+"/redirect", sample.Info.URL.String())
 
 		responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
@@ -364,7 +364,7 @@ func (suite *SamplerTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() 
 }
 
 func (suite *SamplerTestSuite) TestRequestWithRedirect_WithRedirectSetting() {
-	settings := httpp.NewSettings()
+	settings := rest.NewSettings()
 	settings.FollowRedirects = true
 	settings.BaseUrl = suite.testServer.URL
 	suite.sampler.UpdateSettings(settings)
@@ -376,7 +376,7 @@ func (suite *SamplerTestSuite) TestRequestWithRedirect_WithRedirectSetting() {
 	collectedSamples := suite.sampleCollector.Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		sample := collectedSamples[0].(httpp.Sample)
+		sample := collectedSamples[0].(rest.Sample)
 		assert.Equal(suite.T(), suite.testServer.URL+"/redirect", sample.Info.URL.String())
 		assert.True(suite.T(), sample.Info.IsRedirect)
 		assert.Equal(suite.T(), suite.testServer.URL+"/redirected", sample.Info.FinalURL.String())

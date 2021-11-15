@@ -1,8 +1,8 @@
-package httpp_test
+package rest_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"harkonnen/httpp"
+	"harkonnen/rest"
 	"net/url"
 	"testing"
 	"time"
@@ -10,13 +10,13 @@ import (
 
 var testUrl, _ = url.Parse("https://www.wikipedia.org")
 
-var testHttpSample = httpp.NewSample(
+var testHttpSample = rest.NewSample(
 	"Test HTTP Sample",
 	time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 	time.Date(2000, 1, 1, 0, 0, 1, 0, time.UTC),
 	32,
 	2048,
-	httpp.SampleInfo{
+	rest.SampleInfo{
 		URL:    testUrl,
 		Method: "GET",
 	},
@@ -49,7 +49,7 @@ func TestSample_ReceivedBytes(t *testing.T) {
 func TestSampleInfo(t *testing.T) {
 	info := testHttpSample.Info
 
-	assert.IsType(t, httpp.SampleInfo{}, info)
+	assert.IsType(t, rest.SampleInfo{}, info)
 	assert.Equal(t, testUrl, info.URL)
 	assert.Equal(t, "GET", info.Method)
 }

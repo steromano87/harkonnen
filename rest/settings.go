@@ -1,4 +1,4 @@
-package httpp
+package rest
 
 import (
 	"time"
