@@ -1,13 +1,13 @@
-package errors_test
+package shooter_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"harkonnen/errors"
+	"harkonnen/shooter"
 	"testing"
 )
 
 func TestVariableNotFound_Error(t *testing.T) {
-	myError := errors.VariableNotFound{Name: "variableName"}
+	myError := shooter.VariableNotFoundError{Name: "variableName"}
 
 	assert.EqualError(t, myError, "variable 'variableName' not found", "Wrong error message format")
 }

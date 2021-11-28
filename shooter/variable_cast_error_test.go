@@ -1,13 +1,13 @@
-package errors_test
+package shooter_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"harkonnen/errors"
+	"harkonnen/shooter"
 	"testing"
 )
 
 func TestVariableCast_Error(t *testing.T) {
-	myError := &errors.VariableCast{
+	myError := &shooter.VariableCastError{
 		Name:     "variableName",
 		CastType: "int",
 		RawValue: "true",
