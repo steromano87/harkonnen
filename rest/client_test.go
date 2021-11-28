@@ -74,7 +74,7 @@ func (suite *ClientTestSuite) TestGetRequest() {
 	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
@@ -110,7 +110,7 @@ func (suite *ClientTestSuite) TestGetRequestWithQueryString() {
 	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
@@ -143,12 +143,12 @@ func (suite *ClientTestSuite) TestPostNoBody() {
 	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
 			assert.Equal(suite.T(), "POST", sample.Method)
-			// TODO: check if it is better to separate URL from querystring in the Sample
+			// TODO: check if it is better to separate URL from querystring in the BaseSample
 			assert.Equal(suite.T(), suite.testServer.URL, sample.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
 			assert.Greater(suite.T(), sample.SentBytes(), int64(0))
@@ -176,7 +176,7 @@ func (suite *ClientTestSuite) TestPutNoBody() {
 	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
@@ -208,7 +208,7 @@ func (suite *ClientTestSuite) TestPatchNoBody() {
 	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
@@ -240,7 +240,7 @@ func (suite *ClientTestSuite) TestDeleteNoBody() {
 	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
@@ -274,7 +274,7 @@ func (suite *ClientTestSuite) TestPostFormRequest() {
 	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.Sample)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)

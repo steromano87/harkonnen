@@ -1,9 +1,9 @@
-package runtime_test
+package telemetry_test
 
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"harkonnen/runtime"
+	"harkonnen/telemetry"
 	"testing"
 	"time"
 )
@@ -37,15 +37,15 @@ func (mocked MockedSample) ReceivedBytes() int64 {
 }
 
 func TestNewSampleCollector(t *testing.T) {
-	collector := runtime.NewSampleCollector()
-	assert.IsType(t, &runtime.SampleCollector{}, collector)
+	collector := telemetry.SampleCollector{}
+	assert.IsType(t, telemetry.SampleCollector{}, collector)
 
 	flushedSamples := collector.Flush()
 	assert.Empty(t, flushedSamples, "Flushing unused sample collector should give no collected samples")
 }
 
 func TestSampleCollector_CollectFlush(t *testing.T) {
-	collector := runtime.NewSampleCollector()
+	collector := telemetry.SampleCollector{}
 	mockedSample := MockedSample{}
 	collector.Collect(mockedSample)
 

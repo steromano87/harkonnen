@@ -8,7 +8,7 @@ import (
 )
 
 var testHttpSample = rest.NewSample(
-	"Test HTTP Sample",
+	"Test HTTP BaseSample",
 	time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 	time.Date(2000, 1, 1, 0, 0, 1, 0, time.UTC),
 	32,
@@ -16,7 +16,7 @@ var testHttpSample = rest.NewSample(
 )
 
 func TestSample_Name(t *testing.T) {
-	assert.Equal(t, "Test HTTP Sample", testHttpSample.Name())
+	assert.Equal(t, "Test HTTP BaseSample", testHttpSample.Name())
 }
 
 func TestSample_Start(t *testing.T) {

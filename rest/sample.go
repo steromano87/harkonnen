@@ -7,7 +7,7 @@ import (
 )
 
 type Sample struct {
-	telemetry.Sample
+	telemetry.BaseSample
 	URL        *url.URL
 	Parameters url.Values
 	Method     string
@@ -17,7 +17,7 @@ type Sample struct {
 
 func NewSample(name string, start time.Time, end time.Time, sentBytes int64, receivedBytes int64) Sample {
 	sample := new(Sample)
-	sample.Sample = telemetry.NewSample(name, start, end, sentBytes, receivedBytes)
+	sample.BaseSample = telemetry.NewBaseSample(name, start, end, sentBytes, receivedBytes)
 
 	return *sample
 }
