@@ -1,6 +1,7 @@
 package shooter
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -21,10 +22,12 @@ type Shooter struct {
 
 func (s *Shooter) Start() {
 	s.status = Running
+	s.Context.LogCollector().Info(fmt.Sprintf("Shooter %s started", s.ID))
 	go s.run()
 }
 
 func (s *Shooter) ScheduleShutDown() {
+	s.Context.LogCollector().Info(fmt.Sprintf("Shooter %s marked for shotdown", s.ID))
 	s.scheduledForShutdown = true
 	s.status = ShuttingDown
 }
@@ -66,7 +69,15 @@ func (s *Shooter) run() {
 
 func (s *Shooter) executeSetupScript() error {
 	if s.SetUpScript != nil {
-		return s.SetUpScript(s.Context)
+		s.Context.LogCollector().Info("Started setup script execution")
+		err := s.SetUpScript(s.Context)
+		s.Context.LogCollector().Info("Setup script execution completed")
+
+		if err != nil {
+			s.Context.LogCollector().Error(err.Error())
+		}
+
+		return err
 	}
 
 	return nil
@@ -108,7 +119,13 @@ func (s *Shooter) executeMainScripts() {
 
 func (s *Shooter) executeTearDownScript() error {
 	if s.TearDownScript != nil {
-		return s.TearDownScript(s.Context)
+		s.Context.LogCollector().Info("Started teardown script execution")
+		err := s.TearDownScript(s.Context)
+		s.Context.LogCollector().Info("Teardown script execution completed")
+
+		if err != nil {
+			s.Context.LogCollector().Error(err.Error())
+		}
 	}
 
 	return nil
