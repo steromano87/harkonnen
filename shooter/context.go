@@ -4,7 +4,6 @@ import (
 	"context"
 	"harkonnen/log"
 	"harkonnen/telemetry"
-	"time"
 )
 
 type Context struct {
@@ -19,9 +18,9 @@ type Context struct {
 
 func NewContext(parent context.Context) Context {
 	output := new(Context)
-	output.variablePool = new(VariablePool)
 	output.sampleCollector = new(telemetry.SampleCollector)
 	output.logCollector = new(log.Collector)
+	output.variablePool = NewVariablePool(output.logCollector)
 
 	output.Context, output.cancelFunc = context.WithCancel(parent)
 
@@ -49,10 +48,6 @@ func (c *Context) NextLoop() <-chan struct{} {
 }
 
 func (c *Context) OnUnrecoverableError(err error) {
-	c.logCollector.Collect(log.Entry{
-		Timestamp: time.Time{},
-		Level:     log.Error,
-		Message:   err.Error(),
-	})
+	c.logCollector.Error(err.Error())
 	c.NextLoop()
 }

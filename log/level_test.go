@@ -7,6 +7,6 @@ import (
 )
 
 func TestLevel_Above(t *testing.T) {
-	assert.True(t, log.Error.Above(log.Warning))
-	assert.False(t, log.Debug.Above(log.Info))
+	assert.True(t, log.ErrorLevel.Above(log.WarningLevel))
+	assert.False(t, log.DebugLevel.Above(log.InfoLevel))
 }

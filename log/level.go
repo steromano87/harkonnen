@@ -10,19 +10,19 @@ func (l Level) Above(refLevel Level) bool {
 }
 
 var (
-	Error Level = Level{
+	ErrorLevel = Level{
 		Order: 0,
 		Name:  "ERROR",
 	}
-	Warning Level = Level{
+	WarningLevel = Level{
 		Order: 1,
 		Name:  "WARNING",
 	}
-	Info Level = Level{
+	InfoLevel = Level{
 		Order: 2,
 		Name:  "INFO",
 	}
-	Debug Level = Level{
+	DebugLevel = Level{
 		Order: 3,
 		Name:  "DEBUG",
 	}
