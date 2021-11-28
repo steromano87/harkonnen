@@ -1,16 +1,17 @@
-package runtime
+package shooter
 
 import (
 	"fmt"
 	"harkonnen/errors"
+	"harkonnen/runtime"
 )
 
 type VariablePool struct {
 	variables    map[string]interface{}
-	errorHandler *ErrorCollector
+	errorHandler *runtime.ErrorCollector
 }
 
-func NewVariablePool(errorHandler *ErrorCollector) *VariablePool {
+func NewVariablePool(errorHandler *runtime.ErrorCollector) *VariablePool {
 	pool := new(VariablePool)
 	pool.variables = make(map[string]interface{})
 	pool.errorHandler = errorHandler

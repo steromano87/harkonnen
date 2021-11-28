@@ -1,19 +1,15 @@
-package runtime_test
+package shooter_test
 
 import (
 	"github.com/stretchr/testify/assert"
 	"harkonnen/errors"
 	"harkonnen/runtime"
+	"harkonnen/shooter"
 	"testing"
 )
 
-func TestNewVariablePool(t *testing.T) {
-	vp := runtime.NewVariablePool(&runtime.ErrorCollector{})
-	assert.Implements(t, (*runtime.VariablesHandler)(nil), vp)
-}
-
 func TestVariablePool_SetGet(t *testing.T) {
-	vp := runtime.NewVariablePool(&runtime.ErrorCollector{})
+	vp := shooter.NewVariablePool(&runtime.ErrorCollector{})
 	vp.Set("test", "testValue")
 	actualValue := vp.Get("test")
 
@@ -22,7 +18,7 @@ func TestVariablePool_SetGet(t *testing.T) {
 
 func TestVariablePool_GetNonExisting(t *testing.T) {
 	handler := &runtime.ErrorCollector{}
-	vp := runtime.NewVariablePool(handler)
+	vp := shooter.NewVariablePool(handler)
 	actualValue := vp.Get("nonExisting")
 
 	assert.Nil(t, actualValue, "Expected nil to be returned")
@@ -33,7 +29,7 @@ func TestVariablePool_GetNonExisting(t *testing.T) {
 }
 
 func TestVariablePool_GetString(t *testing.T) {
-	vp := runtime.NewVariablePool(&runtime.ErrorCollector{})
+	vp := shooter.NewVariablePool(&runtime.ErrorCollector{})
 	vp.Set("test", "anotherValue")
 	actualValue := vp.Get("test")
 
@@ -43,7 +39,7 @@ func TestVariablePool_GetString(t *testing.T) {
 
 func TestVariablePool_GetStringBadType(t *testing.T) {
 	handler := &runtime.ErrorCollector{}
-	vp := runtime.NewVariablePool(handler)
+	vp := shooter.NewVariablePool(handler)
 	vp.Set("test", 1)
 	actualValue := vp.GetString("test")
 	assert.Equal(t, "1", actualValue)
@@ -53,7 +49,7 @@ func TestVariablePool_GetStringBadType(t *testing.T) {
 }
 
 func TestVariablePool_GetInt(t *testing.T) {
-	vp := runtime.NewVariablePool(&runtime.ErrorCollector{})
+	vp := shooter.NewVariablePool(&runtime.ErrorCollector{})
 	vp.Set("test", 1)
 	actualValue := vp.GetInt("test")
 
@@ -62,7 +58,7 @@ func TestVariablePool_GetInt(t *testing.T) {
 
 func TestVariablePool_GetIntBadType(t *testing.T) {
 	handler := &runtime.ErrorCollector{}
-	vp := runtime.NewVariablePool(handler)
+	vp := shooter.NewVariablePool(handler)
 	vp.Set("test", "a")
 	actualValue := vp.GetInt("test")
 
@@ -73,7 +69,7 @@ func TestVariablePool_GetIntBadType(t *testing.T) {
 }
 
 func TestVariablePool_GetBool(t *testing.T) {
-	vp := runtime.NewVariablePool(&runtime.ErrorCollector{})
+	vp := shooter.NewVariablePool(&runtime.ErrorCollector{})
 	vp.Set("test", true)
 	actualValue := vp.GetBool("test")
 
@@ -82,7 +78,7 @@ func TestVariablePool_GetBool(t *testing.T) {
 
 func TestVariablePool_GetBoolBadType(t *testing.T) {
 	handler := &runtime.ErrorCollector{}
-	vp := runtime.NewVariablePool(handler)
+	vp := shooter.NewVariablePool(handler)
 	vp.Set("test", "booleanValue")
 	actualValue := vp.GetBool("test")
 
@@ -94,7 +90,7 @@ func TestVariablePool_GetBoolBadType(t *testing.T) {
 
 func TestVariablePool_Delete(t *testing.T) {
 	handler := &runtime.ErrorCollector{}
-	vp := runtime.NewVariablePool(handler)
+	vp := shooter.NewVariablePool(handler)
 	vp.Set("test", "finalValue")
 	vp.Delete("test")
 	actualResult := vp.Get("test")
