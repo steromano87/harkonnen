@@ -1,13 +1,13 @@
-package errors_test
+package rest_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"harkonnen/errors"
+	"harkonnen/rest"
 	"testing"
 )
 
 func TestInvalidPartialUrl_Error(t *testing.T) {
-	myError := errors.InvalidPartialUrl{Url: "invalid URL"}
+	myError := rest.InvalidPartialUrlError{Url: "invalid URL"}
 
 	assert.EqualError(
 		t,

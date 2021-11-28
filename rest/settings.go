@@ -1,12 +1,13 @@
 package rest
 
 import (
+	"net/url"
 	"time"
 )
 
 type Settings struct {
 	Timeout                   time.Duration `mapstructure:"timeout"`
-	BaseUrl                   string        `mapstructure:"baseUrl"`
+	BaseUrl                   *url.URL      `mapstructure:"baseUrl"`
 	FollowRedirects           bool          `mapstructure:"followRedirects"`
 	KeepCookies               bool          `mapstructure:"keepCookies"`
 	IdleConnectionTimeout     time.Duration `mapstructure:"idleConnectionTimeout"`
@@ -22,7 +23,7 @@ type Settings struct {
 func NewSettings() *Settings {
 	settings := new(Settings)
 	settings.Timeout = 30 * time.Second
-	settings.BaseUrl = ""
+	settings.BaseUrl = nil
 	settings.FollowRedirects = true
 	settings.KeepCookies = true
 	settings.IdleConnectionTimeout = 10 * time.Second

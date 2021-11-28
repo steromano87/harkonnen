@@ -1,50 +1,23 @@
 package rest
 
 import (
+	"harkonnen/telemetry"
+	"net/url"
 	"time"
 )
 
 type Sample struct {
-	start         time.Time
-	end           time.Time
-	name          string
-	sentBytes     int64
-	receivedBytes int64
-	Info          SampleInfo
+	telemetry.Sample
+	URL        *url.URL
+	Parameters url.Values
+	Method     string
+	IsRedirect bool
+	FinalURL   *url.URL
 }
 
-func NewSample(name string, start time.Time, end time.Time, sentBytes int64, receivedBytes int64, info SampleInfo) *Sample {
+func NewSample(name string, start time.Time, end time.Time, sentBytes int64, receivedBytes int64) Sample {
 	sample := new(Sample)
-	sample.name = name
-	sample.start = start
-	sample.end = end
-	sample.sentBytes = sentBytes
-	sample.receivedBytes = receivedBytes
-	sample.Info = info
+	sample.Sample = telemetry.NewSample(name, start, end, sentBytes, receivedBytes)
 
-	return sample
-}
-
-func (sample Sample) Name() string {
-	return sample.name
-}
-
-func (sample Sample) Start() time.Time {
-	return sample.start
-}
-
-func (sample Sample) End() time.Time {
-	return sample.end
-}
-
-func (sample Sample) Duration() time.Duration {
-	return sample.end.Sub(sample.start)
-}
-
-func (sample Sample) SentBytes() int64 {
-	return sample.sentBytes
-}
-
-func (sample Sample) ReceivedBytes() int64 {
-	return sample.receivedBytes
+	return *sample
 }

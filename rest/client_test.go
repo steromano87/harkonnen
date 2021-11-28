@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"harkonnen/errors"
+	"harkonnen/log"
 	"harkonnen/rest"
-	"harkonnen/runtime"
+	"harkonnen/shooter"
+	"harkonnen/telemetry"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -15,22 +16,18 @@ import (
 	"testing"
 )
 
-type SamplerTestSuite struct {
+type ClientTestSuite struct {
 	suite.Suite
-	settings        *rest.Settings
-	errorHandler    *runtime.ErrorCollector
-	sampleCollector *runtime.SampleCollector
-	context         runtime.Context
-	sampler         *rest.Sampler
-	testServer      *httptest.Server
+	settings   *rest.Settings
+	context    shooter.Context
+	client     *rest.Client
+	testServer *httptest.Server
 }
 
-func (suite *SamplerTestSuite) SetupTest() {
+func (suite *ClientTestSuite) SetupTest() {
 	suite.settings = rest.NewSettings()
-	suite.errorHandler = &runtime.ErrorCollector{}
-	suite.sampleCollector = runtime.NewSampleCollector()
-	suite.context = runtime.NewContext(context.Background(), runtime.NewVariablePool(suite.errorHandler), suite.errorHandler, suite.sampleCollector)
-	suite.sampler = rest.NewSampler(suite.context, suite.settings)
+	suite.context = shooter.NewContext(context.Background())
+	suite.client = rest.NewClient(suite.context, suite.settings)
 
 	handler := http.NewServeMux()
 
@@ -62,38 +59,38 @@ func (suite *SamplerTestSuite) SetupTest() {
 	suite.testServer = httptest.NewServer(handler)
 }
 
-func (suite *SamplerTestSuite) TearDownTest() {
+func (suite *ClientTestSuite) TearDownTest() {
 	suite.testServer.Close()
 }
 
-func (suite *SamplerTestSuite) TestNewSampler() {
-	assert.IsType(suite.T(), &rest.Sampler{}, suite.sampler)
+func (suite *ClientTestSuite) TestNewSampler() {
+	assert.IsType(suite.T(), &rest.Client{}, suite.client)
 }
 
-func (suite *SamplerTestSuite) TestGetRequest() {
-	suite.sampler.Get(suite.testServer.URL, nil)
-	assert.Empty(suite.T(), suite.errorHandler.GetCollected())
+func (suite *ClientTestSuite) TestGetRequest() {
+	suite.client.Execute(rest.Get(suite.testServer.URL, nil))
+	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.Error))
 
-	collectedSamples := suite.sampleCollector.Flush()
+	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
-			assert.Equal(suite.T(), "GET", sample.Info.Method)
-			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
+			assert.Equal(suite.T(), "GET", sample.Method)
+			assert.Equal(suite.T(), suite.testServer.URL, sample.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
-			assert.Equal(suite.T(), url.Values{}, sample.Info.Parameters)
+			assert.Equal(suite.T(), url.Values{}, sample.Parameters)
 			assert.Greater(suite.T(), sample.SentBytes(), int64(0))
 			assert.Greater(suite.T(), sample.ReceivedBytes(), int64(0))
 		}
 	}
 
-	assert.IsType(suite.T(), &http.Response{}, suite.sampler.LastResponse())
-	responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
+	assert.IsType(suite.T(), &http.Response{}, suite.client.LastResponse())
+	responseBodyBytes, _ := ioutil.ReadAll(suite.client.LastResponse().Body)
 	defer func() {
-		_ = suite.sampler.LastResponse().Body.Close()
+		_ = suite.client.LastResponse().Body.Close()
 	}()
 	responseBody := string(responseBodyBytes)
 
@@ -103,33 +100,33 @@ func (suite *SamplerTestSuite) TestGetRequest() {
 	assert.Contains(suite.T(), responseBody, "Request body: ''")
 }
 
-func (suite *SamplerTestSuite) TestGetRequestWithQueryString() {
+func (suite *ClientTestSuite) TestGetRequestWithQueryString() {
 	parameters := url.Values{}
 	parameters.Set("key1", "value1")
 	parameters.Set("key2", "1")
-	suite.sampler.Get(suite.testServer.URL, &parameters)
-	assert.Empty(suite.T(), suite.errorHandler.GetCollected())
+	suite.client.Execute(rest.Get(suite.testServer.URL, &parameters))
+	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.Error))
 
-	collectedSamples := suite.sampleCollector.Flush()
+	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
-			assert.Equal(suite.T(), "GET", sample.Info.Method)
-			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
-			assert.Equal(suite.T(), parameters, sample.Info.Parameters)
+			assert.Equal(suite.T(), "GET", sample.Method)
+			assert.Equal(suite.T(), suite.testServer.URL, sample.URL.String())
+			assert.Equal(suite.T(), parameters, sample.Parameters)
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
 			assert.Greater(suite.T(), sample.SentBytes(), int64(0))
 			assert.Greater(suite.T(), sample.ReceivedBytes(), int64(0))
 		}
 	}
 
-	assert.IsType(suite.T(), &http.Response{}, suite.sampler.LastResponse())
-	responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
+	assert.IsType(suite.T(), &http.Response{}, suite.client.LastResponse())
+	responseBodyBytes, _ := ioutil.ReadAll(suite.client.LastResponse().Body)
 	defer func() {
-		_ = suite.sampler.LastResponse().Body.Close()
+		_ = suite.client.LastResponse().Body.Close()
 	}()
 	responseBody := string(responseBodyBytes)
 
@@ -139,30 +136,30 @@ func (suite *SamplerTestSuite) TestGetRequestWithQueryString() {
 	assert.Contains(suite.T(), responseBody, "Request body: ''")
 }
 
-func (suite *SamplerTestSuite) TestPostNoBody() {
-	suite.sampler.Post(suite.testServer.URL, "", nil)
-	assert.Empty(suite.T(), suite.errorHandler.GetCollected())
+func (suite *ClientTestSuite) TestPostNoBody() {
+	suite.client.Execute(rest.Post(suite.testServer.URL, "", nil))
+	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.Error))
 
-	collectedSamples := suite.sampleCollector.Flush()
+	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
-			assert.Equal(suite.T(), "POST", sample.Info.Method)
+			assert.Equal(suite.T(), "POST", sample.Method)
 			// TODO: check if it is better to separate URL from querystring in the Sample
-			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
+			assert.Equal(suite.T(), suite.testServer.URL, sample.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
 			assert.Greater(suite.T(), sample.SentBytes(), int64(0))
 			assert.Greater(suite.T(), sample.ReceivedBytes(), int64(0))
 		}
 	}
 
-	assert.IsType(suite.T(), &http.Response{}, suite.sampler.LastResponse())
-	responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
+	assert.IsType(suite.T(), &http.Response{}, suite.client.LastResponse())
+	responseBodyBytes, _ := ioutil.ReadAll(suite.client.LastResponse().Body)
 	defer func() {
-		_ = suite.sampler.LastResponse().Body.Close()
+		_ = suite.client.LastResponse().Body.Close()
 	}()
 	responseBody := string(responseBodyBytes)
 
@@ -172,29 +169,29 @@ func (suite *SamplerTestSuite) TestPostNoBody() {
 	assert.Contains(suite.T(), responseBody, "Request body: ''")
 }
 
-func (suite *SamplerTestSuite) TestPutNoBody() {
-	suite.sampler.Put(suite.testServer.URL, "", nil)
-	assert.Empty(suite.T(), suite.errorHandler.GetCollected())
+func (suite *ClientTestSuite) TestPutNoBody() {
+	suite.client.Execute(rest.Put(suite.testServer.URL, "", nil))
+	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.Error))
 
-	collectedSamples := suite.sampleCollector.Flush()
+	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
-			assert.Equal(suite.T(), "PUT", sample.Info.Method)
-			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
+			assert.Equal(suite.T(), "PUT", sample.Method)
+			assert.Equal(suite.T(), suite.testServer.URL, sample.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
 			assert.Greater(suite.T(), sample.SentBytes(), int64(0))
 			assert.Greater(suite.T(), sample.ReceivedBytes(), int64(0))
 		}
 	}
 
-	assert.IsType(suite.T(), &http.Response{}, suite.sampler.LastResponse())
-	responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
+	assert.IsType(suite.T(), &http.Response{}, suite.client.LastResponse())
+	responseBodyBytes, _ := ioutil.ReadAll(suite.client.LastResponse().Body)
 	defer func() {
-		_ = suite.sampler.LastResponse().Body.Close()
+		_ = suite.client.LastResponse().Body.Close()
 	}()
 	responseBody := string(responseBodyBytes)
 
@@ -204,29 +201,29 @@ func (suite *SamplerTestSuite) TestPutNoBody() {
 	assert.Contains(suite.T(), responseBody, "Request body: ''")
 }
 
-func (suite *SamplerTestSuite) TestPatchNoBody() {
-	suite.sampler.Patch(suite.testServer.URL, "", nil)
-	assert.Empty(suite.T(), suite.errorHandler.GetCollected())
+func (suite *ClientTestSuite) TestPatchNoBody() {
+	suite.client.Execute(rest.Patch(suite.testServer.URL, "", nil))
+	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.Error))
 
-	collectedSamples := suite.sampleCollector.Flush()
+	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
-			assert.Equal(suite.T(), "PATCH", sample.Info.Method)
-			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
+			assert.Equal(suite.T(), "PATCH", sample.Method)
+			assert.Equal(suite.T(), suite.testServer.URL, sample.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
 			assert.Greater(suite.T(), sample.SentBytes(), int64(0))
 			assert.Greater(suite.T(), sample.ReceivedBytes(), int64(0))
 		}
 	}
 
-	assert.IsType(suite.T(), &http.Response{}, suite.sampler.LastResponse())
-	responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
+	assert.IsType(suite.T(), &http.Response{}, suite.client.LastResponse())
+	responseBodyBytes, _ := ioutil.ReadAll(suite.client.LastResponse().Body)
 	defer func() {
-		_ = suite.sampler.LastResponse().Body.Close()
+		_ = suite.client.LastResponse().Body.Close()
 	}()
 	responseBody := string(responseBodyBytes)
 
@@ -236,29 +233,29 @@ func (suite *SamplerTestSuite) TestPatchNoBody() {
 	assert.Contains(suite.T(), responseBody, "Request body: ''")
 }
 
-func (suite *SamplerTestSuite) TestDeleteNoBody() {
-	suite.sampler.Delete(suite.testServer.URL, "", nil)
-	assert.Empty(suite.T(), suite.errorHandler.GetCollected())
+func (suite *ClientTestSuite) TestDeleteNoBody() {
+	suite.client.Execute(rest.Delete(suite.testServer.URL, "", nil))
+	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.Error))
 
-	collectedSamples := suite.sampleCollector.Flush()
+	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
-			assert.Equal(suite.T(), "DELETE", sample.Info.Method)
-			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
+			assert.Equal(suite.T(), "DELETE", sample.Method)
+			assert.Equal(suite.T(), suite.testServer.URL, sample.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
 			assert.Greater(suite.T(), sample.SentBytes(), int64(0))
 			assert.Greater(suite.T(), sample.ReceivedBytes(), int64(0))
 		}
 	}
 
-	assert.IsType(suite.T(), &http.Response{}, suite.sampler.LastResponse())
-	responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
+	assert.IsType(suite.T(), &http.Response{}, suite.client.LastResponse())
+	responseBodyBytes, _ := ioutil.ReadAll(suite.client.LastResponse().Body)
 	defer func() {
-		_ = suite.sampler.LastResponse().Body.Close()
+		_ = suite.client.LastResponse().Body.Close()
 	}()
 	responseBody := string(responseBodyBytes)
 
@@ -268,31 +265,31 @@ func (suite *SamplerTestSuite) TestDeleteNoBody() {
 	assert.Contains(suite.T(), responseBody, "Request body: ''")
 }
 
-func (suite *SamplerTestSuite) TestPostFormRequest() {
+func (suite *ClientTestSuite) TestPostFormRequest() {
 	values := url.Values{}
 	values.Set("test", "example")
-	suite.sampler.PostForm(suite.testServer.URL, values)
-	assert.Empty(suite.T(), suite.errorHandler.GetCollected())
+	suite.client.Execute(rest.PostForm(suite.testServer.URL, values))
+	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.Error))
 
-	collectedSamples := suite.sampleCollector.Flush()
+	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
-		assert.Implements(suite.T(), (*runtime.Sample)(nil), collectedSamples[0])
+		assert.Implements(suite.T(), (*telemetry.SampleInfo)(nil), collectedSamples[0])
 
 		if assert.IsType(suite.T(), rest.Sample{}, collectedSamples[0]) {
 			sample := collectedSamples[0].(rest.Sample)
-			assert.Equal(suite.T(), "POST", sample.Info.Method)
-			assert.Equal(suite.T(), suite.testServer.URL, sample.Info.URL.String())
+			assert.Equal(suite.T(), "POST", sample.Method)
+			assert.Equal(suite.T(), suite.testServer.URL, sample.URL.String())
 			assert.Equal(suite.T(), suite.testServer.URL, sample.Name())
 			assert.Greater(suite.T(), sample.SentBytes(), int64(0))
 			assert.Greater(suite.T(), sample.ReceivedBytes(), int64(0))
 		}
 	}
 
-	assert.IsType(suite.T(), &http.Response{}, suite.sampler.LastResponse())
-	responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
+	assert.IsType(suite.T(), &http.Response{}, suite.client.LastResponse())
+	responseBodyBytes, _ := ioutil.ReadAll(suite.client.LastResponse().Body)
 	defer func() {
-		_ = suite.sampler.LastResponse().Body.Close()
+		_ = suite.client.LastResponse().Body.Close()
 	}()
 	responseBody := string(responseBodyBytes)
 
@@ -302,60 +299,57 @@ func (suite *SamplerTestSuite) TestPostFormRequest() {
 	assert.Contains(suite.T(), responseBody, fmt.Sprintf("Request body: '%s'", values.Encode()))
 }
 
-func (suite *SamplerTestSuite) TestRequestMalformedUrl() {
+func (suite *ClientTestSuite) TestRequestMalformedUrl() {
 	malformedUrl := "http:// invalid url"
-	suite.sampler.Get(malformedUrl, nil)
-	errorList := suite.errorHandler.GetCollected()
-	if assert.NotEmpty(suite.T(), errorList) {
-		assert.IsType(suite.T(), errors.MalformedUrl{}, errorList[0])
-	}
+	suite.client.Execute(rest.Get(malformedUrl, nil))
+	errorList := suite.context.LogCollector().Flush(log.Error)
+
+	assert.Equal(suite.T(), 1, len(errorList))
 }
 
-func (suite *SamplerTestSuite) TestRequestInvalidPartialUrl() {
+func (suite *ClientTestSuite) TestRequestInvalidPartialUrl() {
 	settings := rest.NewSettings()
-	settings.BaseUrl = suite.testServer.URL
-	suite.sampler.UpdateSettings(settings)
+	settings.BaseUrl, _ = url.Parse(suite.testServer.URL)
+	suite.client.UpdateSettings(settings)
 
 	invalidPartialUrl := "test"
-	suite.sampler.Get(invalidPartialUrl, nil)
-	errorList := suite.errorHandler.GetCollected()
+	suite.client.Execute(rest.Get(invalidPartialUrl, nil))
+	errorList := suite.context.LogCollector().Flush(log.Error)
 	if assert.NotEmpty(suite.T(), errorList) {
-		assert.IsType(suite.T(), errors.InvalidPartialUrl{}, errorList[0])
+		assert.EqualValues(suite.T(), rest.InvalidPartialUrlError{Url: invalidPartialUrl}.Error(), errorList[0].Message)
 	}
 }
 
-func (suite *SamplerTestSuite) TestRequestPartialMalformedUrl() {
+func (suite *ClientTestSuite) TestRequestPartialMalformedUrl() {
 	settings := rest.NewSettings()
-	settings.BaseUrl = "https:// my malformed base URL"
-	suite.sampler.UpdateSettings(settings)
+	settings.BaseUrl, _ = url.Parse("https:// my malformed base URL")
+	suite.client.UpdateSettings(settings)
 
 	malformedPartialUrl := "/test"
-	suite.sampler.Get(malformedPartialUrl, nil)
-	errorList := suite.errorHandler.GetCollected()
-	if assert.NotEmpty(suite.T(), errorList) {
-		assert.IsType(suite.T(), errors.MalformedUrl{}, errorList[0])
-	}
+	suite.client.Execute(rest.Get(malformedPartialUrl, nil))
+	errorList := suite.context.LogCollector().Flush(log.Error)
+	assert.Equal(suite.T(), 1, len(errorList))
 }
 
-func (suite *SamplerTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() {
+func (suite *ClientTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() {
 	settings := rest.NewSettings()
 	settings.FollowRedirects = false
-	settings.BaseUrl = suite.testServer.URL
-	suite.sampler.UpdateSettings(settings)
+	settings.BaseUrl, _ = url.Parse(suite.testServer.URL)
+	suite.client.UpdateSettings(settings)
 
-	suite.sampler.Get("/redirect", nil)
+	suite.client.Execute(rest.Get("/redirect", nil))
 
-	assert.Empty(suite.T(), suite.errorHandler.GetCollected())
+	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.Error))
 
-	collectedSamples := suite.sampleCollector.Flush()
+	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		sample := collectedSamples[0].(rest.Sample)
-		assert.Equal(suite.T(), suite.testServer.URL+"/redirect", sample.Info.URL.String())
+		assert.Equal(suite.T(), suite.testServer.URL+"/redirect", sample.URL.String())
 
-		responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
+		responseBodyBytes, _ := ioutil.ReadAll(suite.client.LastResponse().Body)
 		defer func() {
-			_ = suite.sampler.LastResponse().Body.Close()
+			_ = suite.client.LastResponse().Body.Close()
 		}()
 		responseBody := string(responseBodyBytes)
 
@@ -363,27 +357,27 @@ func (suite *SamplerTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() 
 	}
 }
 
-func (suite *SamplerTestSuite) TestRequestWithRedirect_WithRedirectSetting() {
+func (suite *ClientTestSuite) TestRequestWithRedirect_WithRedirectSetting() {
 	settings := rest.NewSettings()
 	settings.FollowRedirects = true
-	settings.BaseUrl = suite.testServer.URL
-	suite.sampler.UpdateSettings(settings)
+	settings.BaseUrl, _ = url.Parse(suite.testServer.URL)
+	suite.client.UpdateSettings(settings)
 
-	suite.sampler.Get("/redirect", nil)
+	suite.client.Execute(rest.Get("/redirect", nil))
 
-	assert.Empty(suite.T(), suite.errorHandler.GetCollected())
+	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.Error))
 
-	collectedSamples := suite.sampleCollector.Flush()
+	collectedSamples := suite.context.SampleCollector().Flush()
 
 	if assert.Equal(suite.T(), 1, len(collectedSamples)) {
 		sample := collectedSamples[0].(rest.Sample)
-		assert.Equal(suite.T(), suite.testServer.URL+"/redirect", sample.Info.URL.String())
-		assert.True(suite.T(), sample.Info.IsRedirect)
-		assert.Equal(suite.T(), suite.testServer.URL+"/redirected", sample.Info.FinalURL.String())
+		assert.Equal(suite.T(), suite.testServer.URL+"/redirect", sample.URL.String())
+		assert.True(suite.T(), sample.IsRedirect)
+		assert.Equal(suite.T(), suite.testServer.URL+"/redirected", sample.FinalURL.String())
 
-		responseBodyBytes, _ := ioutil.ReadAll(suite.sampler.LastResponse().Body)
+		responseBodyBytes, _ := ioutil.ReadAll(suite.client.LastResponse().Body)
 		defer func() {
-			_ = suite.sampler.LastResponse().Body.Close()
+			_ = suite.client.LastResponse().Body.Close()
 		}()
 		responseBody := string(responseBodyBytes)
 
@@ -395,5 +389,5 @@ func (suite *SamplerTestSuite) TestRequestWithRedirect_WithRedirectSetting() {
 }
 
 func TestSamplerTestSuite(t *testing.T) {
-	suite.Run(t, new(SamplerTestSuite))
+	suite.Run(t, new(ClientTestSuite))
 }
