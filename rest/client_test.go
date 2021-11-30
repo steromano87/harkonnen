@@ -301,7 +301,11 @@ func (suite *ClientTestSuite) TestPostFormRequest() {
 
 func (suite *ClientTestSuite) TestRequestMalformedUrl() {
 	malformedUrl := "http:// invalid url"
-	suite.client.Execute(rest.Get(malformedUrl, nil))
+
+	assert.Panics(suite.T(), func() {
+		suite.client.Execute(rest.Get(malformedUrl, nil))
+	})
+
 	errorList := suite.context.LogCollector().Flush(log.ErrorLevel)
 
 	assert.Equal(suite.T(), 1, len(errorList))
@@ -313,7 +317,11 @@ func (suite *ClientTestSuite) TestRequestInvalidPartialUrl() {
 	suite.client.UpdateSettings(settings)
 
 	invalidPartialUrl := "test"
-	suite.client.Execute(rest.Get(invalidPartialUrl, nil))
+
+	assert.Panics(suite.T(), func() {
+		suite.client.Execute(rest.Get(invalidPartialUrl, nil))
+	})
+
 	errorList := suite.context.LogCollector().Flush(log.ErrorLevel)
 	if assert.NotEmpty(suite.T(), errorList) {
 		assert.EqualValues(suite.T(), rest.InvalidPartialUrlError{Url: invalidPartialUrl}.Error(), errorList[0].Message)
@@ -326,7 +334,11 @@ func (suite *ClientTestSuite) TestRequestPartialMalformedUrl() {
 	suite.client.UpdateSettings(settings)
 
 	malformedPartialUrl := "/test"
-	suite.client.Execute(rest.Get(malformedPartialUrl, nil))
+
+	assert.Panics(suite.T(), func() {
+		suite.client.Execute(rest.Get(malformedPartialUrl, nil))
+	})
+
 	errorList := suite.context.LogCollector().Flush(log.ErrorLevel)
 	assert.Equal(suite.T(), 1, len(errorList))
 }
@@ -388,6 +400,6 @@ func (suite *ClientTestSuite) TestRequestWithRedirect_WithRedirectSetting() {
 	}
 }
 
-func TestSamplerTestSuite(t *testing.T) {
+func TestClientTestSuite(t *testing.T) {
 	suite.Run(t, new(ClientTestSuite))
 }

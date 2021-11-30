@@ -2,6 +2,7 @@ package shooter
 
 import (
 	"fmt"
+	"github.com/go-errors/errors"
 	"sync"
 )
 
@@ -69,6 +70,8 @@ func (s *Shooter) run() {
 
 func (s *Shooter) executeSetupScript() error {
 	if s.SetUpScript != nil {
+		defer s.handleLoopPanic()
+
 		s.Context.LogCollector().Info("Started setup script execution")
 		err := s.SetUpScript(s.Context)
 		s.Context.LogCollector().Info("Setup script execution completed")
@@ -86,39 +89,54 @@ func (s *Shooter) executeSetupScript() error {
 func (s *Shooter) executeMainScripts() {
 	if len(s.MainScripts) > 0 {
 		for !s.scheduledForShutdown && (s.totalIterations < s.MaxIterations || s.MaxIterations == 0) {
-			var err error
-
-			for _, script := range s.MainScripts {
-				// Check for termination at every loop
-				select {
-				case <-s.Context.Done():
-					s.status = ShuttingDown
-					return
-
-				case <-s.Context.NextLoop():
-					break
-
-				default:
-				}
-
-				err = script(s.Context)
-				// Exit from inner loop in case of error while executing one of the scripts
-				if err != nil {
-					s.Context.OnUnrecoverableError(err)
-				}
-			}
-
-			s.totalIterations++
-
-			if err == nil {
-				s.successfulIterations++
-			}
+			s.executeMainScriptLoop()
 		}
+	}
+}
+
+func (s *Shooter) executeMainScriptLoop() {
+	defer s.handleLoopPanic()
+
+	defer func() {
+		if err := recover(); err != nil {
+			s.totalIterations++
+			return
+		}
+	}()
+
+	var err error
+
+	for _, script := range s.MainScripts {
+		// Check for termination at every loop
+		select {
+		case <-s.Context.Done():
+			s.status = ShuttingDown
+			return
+
+		case <-s.Context.NextLoop():
+			break
+
+		default:
+		}
+
+		err := script(s.Context)
+		// Exit from inner loop in case of error while executing one of the scripts
+		if err != nil {
+			s.Context.OnUnrecoverableError(err)
+		}
+	}
+
+	s.totalIterations++
+
+	if err == nil {
+		s.successfulIterations++
 	}
 }
 
 func (s *Shooter) executeTearDownScript() error {
 	if s.TearDownScript != nil {
+		defer s.handleLoopPanic()
+
 		s.Context.LogCollector().Info("Started teardown script execution")
 		err := s.TearDownScript(s.Context)
 		s.Context.LogCollector().Info("Teardown script execution completed")
@@ -129,6 +147,14 @@ func (s *Shooter) executeTearDownScript() error {
 	}
 
 	return nil
+}
+
+func (s *Shooter) handleLoopPanic() {
+	if err := recover(); err != nil {
+		s.Context.LogCollector().Error(errors.Wrap(err, 2).ErrorStack())
+		s.totalIterations++
+		return
+	}
 }
 
 func (s *Shooter) Status() Status {

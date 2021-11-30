@@ -49,5 +49,5 @@ func (c *Context) NextLoop() <-chan struct{} {
 
 func (c *Context) OnUnrecoverableError(err error) {
 	c.logCollector.Error(err.Error())
-	c.NextLoop()
+	panic(err)
 }
