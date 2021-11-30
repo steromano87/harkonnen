@@ -145,3 +145,27 @@ func TestShooter_SetUpScriptWithImplicitError(t *testing.T) {
 	assert.Equal(t, 0, testShooter.SuccessfulIterations())
 	assert.Equal(t, shooter.Error, testShooter.Status())
 }
+
+func TestShooter_TearDownScriptWithImplicitError(t *testing.T) {
+	testContext := shooter.NewContext(context.Background())
+	wg := sync.WaitGroup{}
+
+	testShooter := shooter.Shooter{
+		ID:             "BaseShooter",
+		Context:        testContext,
+		SetUpScript:    nil,
+		MainScripts:    []shooter.Script{mainScriptOne, mainScriptTwo},
+		TearDownScript: scriptWithImplicitError,
+		MaxIterations:  3,
+		WaitGroup:      &wg,
+	}
+
+	wg.Add(1)
+	testShooter.Start()
+	assert.Equal(t, shooter.Running, testShooter.Status())
+
+	wg.Wait()
+	assert.Equal(t, 3, testShooter.TotalIterations())
+	assert.Equal(t, 3, testShooter.SuccessfulIterations())
+	assert.Equal(t, shooter.Error, testShooter.Status())
+}
