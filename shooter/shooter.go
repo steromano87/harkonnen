@@ -89,12 +89,12 @@ func (s *Shooter) executeSetupScript() error {
 func (s *Shooter) executeMainScripts() {
 	if len(s.MainScripts) > 0 {
 		for !s.scheduledForShutdown && (s.totalIterations < s.MaxIterations || s.MaxIterations == 0) {
-			s.executeMainScriptLoop()
+			s.executeMainScriptsLoop()
 		}
 	}
 }
 
-func (s *Shooter) executeMainScriptLoop() {
+func (s *Shooter) executeMainScriptsLoop() {
 	defer s.handleLoopPanic()
 
 	defer func() {
