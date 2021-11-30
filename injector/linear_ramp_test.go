@@ -1,10 +1,10 @@
-package load_test
+package injector_test
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-	"harkonnen/load"
+	"harkonnen/injector"
 	"testing"
 	"time"
 )
@@ -14,10 +14,10 @@ var initialDelay = "5s"
 var rampUpTime = "4s"
 var sustainTime = "10s"
 var rampDownTime = "2s"
-var testRamp, _ = load.NewRamp(loadUnits, initialDelay, rampUpTime, sustainTime, rampDownTime)
+var testRamp, _ = injector.NewLinearRamp(loadUnits, initialDelay, rampUpTime, sustainTime, rampDownTime)
 
 func TestRampCreation(t *testing.T) {
-	assert.IsType(t, load.Ramp{}, testRamp)
+	assert.IsType(t, injector.LinearRamp{}, testRamp)
 }
 
 func TestRamp_At_BeforeStart(t *testing.T) {
@@ -70,7 +70,7 @@ func TestRamp_Marshalling(t *testing.T) {
 func TestRamp_UnmarshalYAML(t *testing.T) {
 	output, _ := yaml.Marshal(testRamp)
 
-	var outputRamp load.Ramp
+	var outputRamp injector.LinearRamp
 	err := yaml.Unmarshal(output, &outputRamp)
 
 	if assert.NoError(t, err) {
