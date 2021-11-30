@@ -2,10 +2,10 @@ package shooter
 
 import "fmt"
 
-type VariableNotFoundError struct {
+type ErrVariableNotFound struct {
 	Name string
 }
 
-func (vnf VariableNotFoundError) Error() string {
+func (vnf ErrVariableNotFound) Error() string {
 	return fmt.Sprintf("variable '%s' not found", vnf.Name)
 }

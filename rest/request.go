@@ -98,7 +98,7 @@ func (r *Request) composeUrl(baseUrl *url.URL, relativeUrl string) (*url.URL, er
 	}
 
 	if !strings.HasPrefix(relativeUrl, "/") {
-		return nil, InvalidPartialUrlError{Url: relativeUrl}
+		return nil, ErrInvalidPartialUrl{Url: relativeUrl}
 	}
 
 	returnUrl, err := baseUrl.Parse(relativeUrl)

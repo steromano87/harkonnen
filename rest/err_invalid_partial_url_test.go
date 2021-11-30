@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestInvalidPartialUrl_Error(t *testing.T) {
-	myError := rest.InvalidPartialUrlError{Url: "invalid URL"}
+func TestErrInvalidPartialUrl_Error(t *testing.T) {
+	myError := rest.ErrInvalidPartialUrl{Url: "invalid URL"}
 
 	assert.EqualError(
 		t,

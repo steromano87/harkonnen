@@ -324,7 +324,7 @@ func (suite *ClientTestSuite) TestRequestInvalidPartialUrl() {
 
 	errorList := suite.context.LogCollector().Flush(log.ErrorLevel)
 	if assert.NotEmpty(suite.T(), errorList) {
-		assert.EqualValues(suite.T(), rest.InvalidPartialUrlError{Url: invalidPartialUrl}.Error(), errorList[0].Message)
+		assert.EqualValues(suite.T(), rest.ErrInvalidPartialUrl{Url: invalidPartialUrl}.Error(), errorList[0].Message)
 	}
 }
 

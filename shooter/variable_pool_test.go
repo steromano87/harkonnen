@@ -22,7 +22,7 @@ func TestVariablePool_GetNonExisting(t *testing.T) {
 	actualValue, err := vp.Get("nonExisting")
 
 	assert.Nil(t, actualValue, "Expected nil to be returned")
-	assert.IsType(t, shooter.VariableNotFoundError{}, err)
+	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
 	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
 }
 
@@ -43,7 +43,7 @@ func TestVariablePool_GetStringNonExisting(t *testing.T) {
 	actualValue, err := vp.GetInt("nonExisting")
 
 	assert.Empty(t, actualValue, "Expected empty to be returned")
-	assert.IsType(t, shooter.VariableNotFoundError{}, err)
+	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
 	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
 }
 
@@ -73,7 +73,7 @@ func TestVariablePool_GetIntNonExisting(t *testing.T) {
 	actualValue, err := vp.GetInt("nonExisting")
 
 	assert.Zero(t, actualValue, "Expected zero to be returned")
-	assert.IsType(t, shooter.VariableNotFoundError{}, err)
+	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
 	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
 }
 
@@ -84,7 +84,7 @@ func TestVariablePool_GetIntBadType(t *testing.T) {
 	actualValue, err := vp.GetInt("test")
 
 	assert.Equal(t, 0, actualValue, "Expected zero-valued int")
-	assert.IsType(t, shooter.VariableCastError{}, err)
+	assert.IsType(t, shooter.ErrBadVariableCast{}, err)
 	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
 }
 
@@ -104,7 +104,7 @@ func TestVariablePool_GetBoolNonExisting(t *testing.T) {
 	actualValue, err := vp.GetBool("nonExisting")
 
 	assert.False(t, actualValue, "Expected false to be returned")
-	assert.IsType(t, shooter.VariableNotFoundError{}, err)
+	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
 	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
 }
 
@@ -115,7 +115,7 @@ func TestVariablePool_GetBoolBadType(t *testing.T) {
 	actualValue, err := vp.GetBool("test")
 
 	assert.Equal(t, false, actualValue, "Expected zero-valued bool (false)")
-	assert.IsType(t, shooter.VariableCastError{}, err)
+	assert.IsType(t, shooter.ErrBadVariableCast{}, err)
 	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
 }
 
@@ -127,6 +127,6 @@ func TestVariablePool_Delete(t *testing.T) {
 	actualResult, err := vp.Get("test")
 
 	assert.Nil(t, actualResult)
-	assert.IsType(t, shooter.VariableNotFoundError{}, err)
+	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
 	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
 }

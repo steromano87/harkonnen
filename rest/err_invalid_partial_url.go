@@ -2,10 +2,10 @@ package rest
 
 import "fmt"
 
-type InvalidPartialUrlError struct {
+type ErrInvalidPartialUrl struct {
 	Url string
 }
 
-func (ipu InvalidPartialUrlError) Error() string {
+func (ipu ErrInvalidPartialUrl) Error() string {
 	return fmt.Sprintf("'%s' is an invalid partial URL", ipu.Url)
 }

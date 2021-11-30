@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestVariableCast_Error(t *testing.T) {
-	myError := &shooter.VariableCastError{
+func TestErrBadVariableCast_Error(t *testing.T) {
+	myError := &shooter.ErrBadVariableCast{
 		Name:     "variableName",
 		CastType: "int",
 		RawValue: "true",

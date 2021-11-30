@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestVariableNotFound_Error(t *testing.T) {
-	myError := shooter.VariableNotFoundError{Name: "variableName"}
+func TestErrVariableNotFound_Error(t *testing.T) {
+	myError := shooter.ErrVariableNotFound{Name: "variableName"}
 
 	assert.EqualError(t, myError, "variable 'variableName' not found", "Wrong error message format")
 }

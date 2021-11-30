@@ -36,7 +36,7 @@ func (pool *VariablePool) GetInt(name string) (int, error) {
 
 	convertedValue, isOk := value.(int)
 	if !isOk {
-		err = VariableCastError{
+		err = ErrBadVariableCast{
 			Name:     name,
 			CastType: "int",
 			RawValue: value,
@@ -56,7 +56,7 @@ func (pool *VariablePool) GetBool(name string) (bool, error) {
 
 	convertedValue, isOk := value.(bool)
 	if !isOk {
-		err = VariableCastError{
+		err = ErrBadVariableCast{
 			Name:     name,
 			CastType: "bool",
 			RawValue: value,
@@ -73,7 +73,7 @@ func (pool *VariablePool) Get(name string) (interface{}, error) {
 	value, isPresent := pool.variables[name]
 
 	if !isPresent {
-		err := VariableNotFoundError{Name: name}
+		err := ErrVariableNotFound{Name: name}
 		pool.logCollector.Error(err.Error())
 		return nil, err
 	}
