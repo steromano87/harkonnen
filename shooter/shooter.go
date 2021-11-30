@@ -45,9 +45,8 @@ func (s *Shooter) run() {
 	defer s.WaitGroup.Done()
 
 	// Setup script execution
-	err := s.executeSetupScript()
-	if err != nil {
-		s.status = Error
+	s.executeSetupScript()
+	if s.status == Error {
 		return
 	}
 
@@ -55,9 +54,8 @@ func (s *Shooter) run() {
 	s.executeMainScripts()
 
 	// Teardown script execution
-	err = s.executeTearDownScript()
-	if err != nil {
-		s.status = Error
+	s.executeTearDownScript()
+	if s.status == Error {
 		return
 	}
 
@@ -68,23 +66,18 @@ func (s *Shooter) run() {
 	}
 }
 
-func (s *Shooter) executeSetupScript() error {
+func (s *Shooter) executeSetupScript() {
 	if s.SetUpScript != nil {
-		defer s.handleLoopPanic()
+		defer s.handleSetUpTearDownPanic()
 
 		s.Context.LogCollector().Info("Started setup script execution")
 		err := s.SetUpScript(s.Context)
 		s.Context.LogCollector().Info("Setup script execution completed")
 
 		if err != nil {
-			s.Context.LogCollector().Error(err.Error())
 			s.Context.OnUnrecoverableError(err)
 		}
-
-		return err
 	}
-
-	return nil
 }
 
 func (s *Shooter) executeMainScripts() {
@@ -96,7 +89,7 @@ func (s *Shooter) executeMainScripts() {
 }
 
 func (s *Shooter) executeMainScriptsLoop() {
-	defer s.handleLoopPanic()
+	defer s.handleMainLoopPanic()
 
 	var err error
 
@@ -127,24 +120,29 @@ func (s *Shooter) executeMainScriptsLoop() {
 	}
 }
 
-func (s *Shooter) executeTearDownScript() error {
+func (s *Shooter) executeTearDownScript() {
 	if s.TearDownScript != nil {
-		defer s.handleLoopPanic()
+		defer s.handleSetUpTearDownPanic()
 
 		s.Context.LogCollector().Info("Started teardown script execution")
 		err := s.TearDownScript(s.Context)
 		s.Context.LogCollector().Info("Teardown script execution completed")
 
 		if err != nil {
-			s.Context.LogCollector().Error(err.Error())
 			s.Context.OnUnrecoverableError(err)
 		}
 	}
-
-	return nil
 }
 
-func (s *Shooter) handleLoopPanic() {
+func (s *Shooter) handleSetUpTearDownPanic() {
+	if err := recover(); err != nil {
+		s.Context.LogCollector().Error(errors.Wrap(err, 2).ErrorStack())
+		s.status = Error
+		return
+	}
+}
+
+func (s *Shooter) handleMainLoopPanic() {
 	if err := recover(); err != nil {
 		s.Context.LogCollector().Error(errors.Wrap(err, 2).ErrorStack())
 		s.totalIterations++
