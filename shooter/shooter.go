@@ -97,13 +97,6 @@ func (s *Shooter) executeMainScripts() {
 func (s *Shooter) executeMainScriptsLoop() {
 	defer s.handleLoopPanic()
 
-	defer func() {
-		if err := recover(); err != nil {
-			s.totalIterations++
-			return
-		}
-	}()
-
 	var err error
 
 	for _, script := range s.MainScripts {
