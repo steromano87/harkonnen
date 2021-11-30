@@ -78,6 +78,7 @@ func (s *Shooter) executeSetupScript() error {
 
 		if err != nil {
 			s.Context.LogCollector().Error(err.Error())
+			s.Context.OnUnrecoverableError(err)
 		}
 
 		return err
@@ -136,6 +137,7 @@ func (s *Shooter) executeTearDownScript() error {
 
 		if err != nil {
 			s.Context.LogCollector().Error(err.Error())
+			s.Context.OnUnrecoverableError(err)
 		}
 	}
 
