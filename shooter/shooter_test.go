@@ -106,7 +106,7 @@ func TestShooter_ScriptWithImplicitError(t *testing.T) {
 		ID:             "BaseShooter",
 		Context:        testContext,
 		SetUpScript:    nil,
-		MainScripts:    []shooter.Script{scriptWithImplicitError},
+		MainScripts:    []shooter.Script{scriptWithImplicitError, mainScriptTwo},
 		TearDownScript: nil,
 		MaxIterations:  3,
 		WaitGroup:      &wg,
