@@ -1,132 +1,131 @@
 package shooter_test
 
 import (
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
-	"harkonnen/log"
+	"github.com/stretchr/testify/suite"
 	"harkonnen/shooter"
+	"os"
 	"testing"
 )
 
-func TestVariablePool_SetGet(t *testing.T) {
-	vp := shooter.NewVariablePool(&log.Collector{})
+type VariablePoolTestSuite struct {
+	suite.Suite
+	logger zerolog.Logger
+}
+
+func (suite *VariablePoolTestSuite) SetupTest() {
+	suite.logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+}
+
+func (suite *VariablePoolTestSuite) TestSetGet() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", "testValue")
 	actualValue, err := vp.Get("test")
 
-	assert.Equal(t, "testValue", actualValue)
-	assert.NoError(t, err)
+	assert.Equal(suite.T(), "testValue", actualValue)
+	assert.NoError(suite.T(), err)
 }
 
-func TestVariablePool_GetNonExisting(t *testing.T) {
-	logCollector := log.Collector{}
-	vp := shooter.NewVariablePool(&logCollector)
+func (suite *VariablePoolTestSuite) TestGetNonExisting() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	actualValue, err := vp.Get("nonExisting")
 
-	assert.Nil(t, actualValue, "Expected nil to be returned")
-	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
-	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
+	assert.Nil(suite.T(), actualValue, "Expected nil to be returned")
+	assert.IsType(suite.T(), shooter.ErrVariableNotFound{}, err)
 }
 
-func TestVariablePool_GetString(t *testing.T) {
-	vp := shooter.NewVariablePool(&log.Collector{})
+func (suite *VariablePoolTestSuite) TestGetString() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", "anotherValue")
 	actualValue, err := vp.Get("test")
 
-	assert.Equal(t, "anotherValue", actualValue)
-	assert.IsType(t, "", actualValue, "It is not a string")
-	assert.NoError(t, err)
+	assert.Equal(suite.T(), "anotherValue", actualValue)
+	assert.IsType(suite.T(), "", actualValue, "It is not a string")
+	assert.NoError(suite.T(), err)
 }
 
-func TestVariablePool_GetStringNonExisting(t *testing.T) {
-	logCollector := log.Collector{}
-	vp := shooter.NewVariablePool(&logCollector)
+func (suite *VariablePoolTestSuite) TestGetStringNonExisting() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", "anotherValue")
 	actualValue, err := vp.GetInt("nonExisting")
 
-	assert.Empty(t, actualValue, "Expected empty to be returned")
-	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
-	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
+	assert.Empty(suite.T(), actualValue, "Expected empty to be returned")
+	assert.IsType(suite.T(), shooter.ErrVariableNotFound{}, err)
 }
 
-func TestVariablePool_GetStringBadType(t *testing.T) {
-	logCollector := log.Collector{}
-	vp := shooter.NewVariablePool(&logCollector)
+func (suite *VariablePoolTestSuite) TestGetStringBadType() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", 1)
 	actualValue, err := vp.GetString("test")
-	assert.Equal(t, "1", actualValue)
-	assert.NoError(t, err)
-	assert.Empty(t, logCollector.Flush(log.ErrorLevel))
+	assert.Equal(suite.T(), "1", actualValue)
+	assert.NoError(suite.T(), err)
 }
 
-func TestVariablePool_GetInt(t *testing.T) {
-	vp := shooter.NewVariablePool(&log.Collector{})
+func (suite *VariablePoolTestSuite) TestGetInt() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", 1)
 	actualValue, err := vp.GetInt("test")
 
-	assert.Equal(t, 1, actualValue)
-	assert.NoError(t, err)
+	assert.Equal(suite.T(), 1, actualValue)
+	assert.NoError(suite.T(), err)
 }
 
-func TestVariablePool_GetIntNonExisting(t *testing.T) {
-	logCollector := log.Collector{}
-	vp := shooter.NewVariablePool(&logCollector)
+func (suite *VariablePoolTestSuite) TestGetIntNonExisting() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", 7)
 	actualValue, err := vp.GetInt("nonExisting")
 
-	assert.Zero(t, actualValue, "Expected zero to be returned")
-	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
-	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
+	assert.Zero(suite.T(), actualValue, "Expected zero to be returned")
+	assert.IsType(suite.T(), shooter.ErrVariableNotFound{}, err)
 }
 
-func TestVariablePool_GetIntBadType(t *testing.T) {
-	logCollector := log.Collector{}
-	vp := shooter.NewVariablePool(&logCollector)
+func (suite *VariablePoolTestSuite) TestGetIntBadType() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", "a")
 	actualValue, err := vp.GetInt("test")
 
-	assert.Equal(t, 0, actualValue, "Expected zero-valued int")
-	assert.IsType(t, shooter.ErrBadVariableCast{}, err)
-	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
+	assert.Equal(suite.T(), 0, actualValue, "Expected zero-valued int")
+	assert.IsType(suite.T(), shooter.ErrBadVariableCast{}, err)
 }
 
-func TestVariablePool_GetBool(t *testing.T) {
-	vp := shooter.NewVariablePool(&log.Collector{})
+func (suite *VariablePoolTestSuite) TestGetBool() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", true)
 	actualValue, err := vp.GetBool("test")
 
-	assert.Equal(t, true, actualValue)
-	assert.NoError(t, err)
+	assert.Equal(suite.T(), true, actualValue)
+	assert.NoError(suite.T(), err)
 }
 
-func TestVariablePool_GetBoolNonExisting(t *testing.T) {
-	logCollector := log.Collector{}
-	vp := shooter.NewVariablePool(&logCollector)
+func (suite *VariablePoolTestSuite) TestGetBoolNonExisting() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", true)
 	actualValue, err := vp.GetBool("nonExisting")
 
-	assert.False(t, actualValue, "Expected false to be returned")
-	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
-	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
+	assert.False(suite.T(), actualValue, "Expected false to be returned")
+	assert.IsType(suite.T(), shooter.ErrVariableNotFound{}, err)
 }
 
-func TestVariablePool_GetBoolBadType(t *testing.T) {
-	logCollector := log.Collector{}
-	vp := shooter.NewVariablePool(&logCollector)
+func (suite *VariablePoolTestSuite) TestGetBoolBadType() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", "booleanValue")
 	actualValue, err := vp.GetBool("test")
 
-	assert.Equal(t, false, actualValue, "Expected zero-valued bool (false)")
-	assert.IsType(t, shooter.ErrBadVariableCast{}, err)
-	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
+	assert.Equal(suite.T(), false, actualValue, "Expected zero-valued bool (false)")
+	assert.IsType(suite.T(), shooter.ErrBadVariableCast{}, err)
 }
 
-func TestVariablePool_Delete(t *testing.T) {
-	logCollector := log.Collector{}
-	vp := shooter.NewVariablePool(&logCollector)
+func (suite *VariablePoolTestSuite) TestDelete() {
+	vp := shooter.NewVariablePool(&suite.logger)
 	vp.Set("test", "finalValue")
 	vp.Delete("test")
 	actualResult, err := vp.Get("test")
 
-	assert.Nil(t, actualResult)
-	assert.IsType(t, shooter.ErrVariableNotFound{}, err)
-	assert.Equal(t, 1, len(logCollector.Flush(log.ErrorLevel)))
+	assert.Nil(suite.T(), actualResult)
+	assert.IsType(suite.T(), shooter.ErrVariableNotFound{}, err)
+}
+
+func TestVariablePoolTestSuite(t *testing.T) {
+	suite.Run(t, new(VariablePoolTestSuite))
 }

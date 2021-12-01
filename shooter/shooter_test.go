@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"harkonnen/shooter"
+	"os"
 	"sync"
 	"testing"
 )
@@ -51,7 +53,7 @@ var scriptWithImplicitError = func(ctx shooter.Context) error {
 }
 
 func TestShooter_Start(t *testing.T) {
-	testContext := shooter.NewContext(context.Background())
+	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{
@@ -75,7 +77,7 @@ func TestShooter_Start(t *testing.T) {
 }
 
 func TestShooter_StartWithError(t *testing.T) {
-	testContext := shooter.NewContext(context.Background())
+	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{
@@ -99,7 +101,7 @@ func TestShooter_StartWithError(t *testing.T) {
 }
 
 func TestShooter_ScriptWithImplicitError(t *testing.T) {
-	testContext := shooter.NewContext(context.Background())
+	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{
@@ -123,7 +125,7 @@ func TestShooter_ScriptWithImplicitError(t *testing.T) {
 }
 
 func TestShooter_SetUpScriptWithImplicitError(t *testing.T) {
-	testContext := shooter.NewContext(context.Background())
+	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{
@@ -147,7 +149,7 @@ func TestShooter_SetUpScriptWithImplicitError(t *testing.T) {
 }
 
 func TestShooter_TearDownScriptWithImplicitError(t *testing.T) {
-	testContext := shooter.NewContext(context.Background())
+	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{

@@ -1,8 +1,8 @@
 package shooter
 
 import (
-	"fmt"
-	"github.com/go-errors/errors"
+	"github.com/rs/zerolog"
+	"harkonnen/telemetry"
 	"sync"
 )
 
@@ -15,6 +15,9 @@ type Shooter struct {
 	MaxIterations  int
 	WaitGroup      *sync.WaitGroup
 
+	SampleCollector *telemetry.SampleCollector
+	VariablePool    *VariablePool
+
 	status               Status
 	totalIterations      int
 	successfulIterations int
@@ -22,13 +25,13 @@ type Shooter struct {
 }
 
 func (s *Shooter) Start() {
-	s.status = Running
-	s.Context.LogCollector().Info(fmt.Sprintf("Shooter %s started", s.ID))
 	go s.run()
+	s.status = Running
+	s.Logger().Info().Msg("Shooter started")
 }
 
 func (s *Shooter) ScheduleShutDown() {
-	s.Context.LogCollector().Info(fmt.Sprintf("Shooter %s marked for shotdown", s.ID))
+	s.Logger().Info().Msg("Shooter marked for shutdown")
 	s.scheduledForShutdown = true
 	s.status = ShuttingDown
 }
@@ -39,6 +42,11 @@ func (s *Shooter) TotalIterations() int {
 
 func (s *Shooter) SuccessfulIterations() int {
 	return s.successfulIterations
+}
+
+func (s *Shooter) Logger() *zerolog.Logger {
+	shooterLogger := s.Context.Logger().With().Str("ID", s.ID).Logger()
+	return &shooterLogger
 }
 
 func (s *Shooter) run() {
@@ -70,9 +78,9 @@ func (s *Shooter) executeSetupScript() {
 	if s.SetUpScript != nil {
 		defer s.handleSetUpTearDownPanic()
 
-		s.Context.LogCollector().Info("Started setup script execution")
+		s.Logger().Info().Msg("Started setup script execution")
 		err := s.SetUpScript(s.Context)
-		s.Context.LogCollector().Info("Setup script execution completed")
+		s.Logger().Info().Msg("Setup script execution completed")
 
 		if err != nil {
 			s.Context.OnUnrecoverableError(err)
@@ -93,7 +101,7 @@ func (s *Shooter) executeMainScriptsLoop() {
 
 	var err error
 
-	for _, script := range s.MainScripts {
+	for _, mainScript := range s.MainScripts {
 		// Check for termination at every loop
 		select {
 		case <-s.Context.Done():
@@ -106,7 +114,7 @@ func (s *Shooter) executeMainScriptsLoop() {
 		default:
 		}
 
-		err := script(s.Context)
+		err := mainScript(s.Context)
 		// Exit from inner loop in case of error while executing one of the scripts
 		if err != nil {
 			s.Context.OnUnrecoverableError(err)
@@ -124,9 +132,9 @@ func (s *Shooter) executeTearDownScript() {
 	if s.TearDownScript != nil {
 		defer s.handleSetUpTearDownPanic()
 
-		s.Context.LogCollector().Info("Started teardown script execution")
+		s.Logger().Info().Msg("Started teardown script execution")
 		err := s.TearDownScript(s.Context)
-		s.Context.LogCollector().Info("Teardown script execution completed")
+		s.Logger().Info().Msg("Teardown script execution completed")
 
 		if err != nil {
 			s.Context.OnUnrecoverableError(err)
@@ -136,7 +144,7 @@ func (s *Shooter) executeTearDownScript() {
 
 func (s *Shooter) handleSetUpTearDownPanic() {
 	if err := recover(); err != nil {
-		s.Context.LogCollector().Error(errors.Wrap(err, 2).ErrorStack())
+		s.Logger().Error().Stack().Err(err.(error)).Msg("Encountered error during setup/teardown sequence")
 		s.status = Error
 		return
 	}
@@ -144,7 +152,7 @@ func (s *Shooter) handleSetUpTearDownPanic() {
 
 func (s *Shooter) handleMainLoopPanic() {
 	if err := recover(); err != nil {
-		s.Context.LogCollector().Error(errors.Wrap(err, 2).ErrorStack())
+		s.Logger().Error().Stack().Err(err.(error)).Msg("Encountered error during main loop")
 		s.totalIterations++
 		return
 	}

@@ -2,41 +2,39 @@ package shooter
 
 import (
 	"context"
-	"harkonnen/log"
+	"github.com/rs/zerolog"
 	"harkonnen/telemetry"
 )
 
 type Context struct {
 	context.Context
-
 	variablePool    *VariablePool
 	sampleCollector *telemetry.SampleCollector
-	logCollector    *log.Collector
-
-	cancelFunc context.CancelFunc
+	logger          *zerolog.Logger
+	cancelFunc      context.CancelFunc
 }
 
-func NewContext(parent context.Context) Context {
+func NewContext(parent context.Context, parentLogger zerolog.Logger) Context {
 	output := new(Context)
 	output.sampleCollector = new(telemetry.SampleCollector)
-	output.logCollector = new(log.Collector)
-	output.variablePool = NewVariablePool(output.logCollector)
-
+	newLogger := parentLogger.With().Str("component", "Shooter").Logger()
+	output.logger = &newLogger
+	output.variablePool = NewVariablePool(output.logger)
 	output.Context, output.cancelFunc = context.WithCancel(parent)
 
 	return *output
 }
 
-func (c *Context) VariablePool() *VariablePool {
-	return c.variablePool
+func (c *Context) Logger() *zerolog.Logger {
+	return c.logger
 }
 
 func (c *Context) SampleCollector() *telemetry.SampleCollector {
 	return c.sampleCollector
 }
 
-func (c *Context) LogCollector() *log.Collector {
-	return c.logCollector
+func (c *Context) VariablePool() *VariablePool {
+	return c.variablePool
 }
 
 func (c *Context) Cancel() {
@@ -48,6 +46,6 @@ func (c *Context) NextLoop() <-chan struct{} {
 }
 
 func (c *Context) OnUnrecoverableError(err error) {
-	c.logCollector.Error(err.Error())
+	c.logger.Error().Caller().Stack().Err(err).Msg("Caught an unrecoverable error")
 	panic(err)
 }

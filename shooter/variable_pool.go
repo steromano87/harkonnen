@@ -2,25 +2,27 @@ package shooter
 
 import (
 	"fmt"
-	"harkonnen/log"
+	"github.com/rs/zerolog"
 )
 
 type VariablePool struct {
-	variables    map[string]interface{}
-	logCollector *log.Collector
+	variables map[string]interface{}
+	logger    *zerolog.Logger
 }
 
-func NewVariablePool(logCollector *log.Collector) *VariablePool {
+func NewVariablePool(parentLogger *zerolog.Logger) *VariablePool {
 	pool := new(VariablePool)
 	pool.variables = make(map[string]interface{})
-	pool.logCollector = logCollector
+
+	poolLogger := parentLogger.With().Str("component", "Variable Pool").Logger()
+	pool.logger = &poolLogger
 
 	return pool
 }
 
 func (pool *VariablePool) Set(name string, value interface{}) {
 	pool.variables[name] = value
-	pool.logCollector.Debug(fmt.Sprintf("Set variable \"%s\" with value %s", name, value))
+	pool.logger.Info().Msgf("Set variable '%s' with value '%s'", name, value)
 }
 
 func (pool *VariablePool) GetString(name string) (string, error) {
@@ -41,7 +43,7 @@ func (pool *VariablePool) GetInt(name string) (int, error) {
 			CastType: "int",
 			RawValue: value,
 		}
-		pool.logCollector.Error(err.Error())
+		pool.logger.Warn().Err(err).Msgf("Caught an error while retrieving variable '%s'", name)
 		return 0, err
 	}
 
@@ -61,7 +63,7 @@ func (pool *VariablePool) GetBool(name string) (bool, error) {
 			CastType: "bool",
 			RawValue: value,
 		}
-		pool.logCollector.Error(err.Error())
+		pool.logger.Warn().Err(err).Msgf("Caught an error while retrieving variable '%s'", name)
 		return false, err
 	}
 
@@ -69,12 +71,12 @@ func (pool *VariablePool) GetBool(name string) (bool, error) {
 }
 
 func (pool *VariablePool) Get(name string) (interface{}, error) {
-	pool.logCollector.Debug(fmt.Sprintf("Requested variable \"%s\"", name))
+	pool.logger.Info().Msgf("Requested variable '%s'", name)
 	value, isPresent := pool.variables[name]
 
 	if !isPresent {
 		err := ErrVariableNotFound{Name: name}
-		pool.logCollector.Error(err.Error())
+		pool.logger.Warn().Err(err).Msgf("Caught an error while retrieving variable '%s'", name)
 		return nil, err
 	}
 
@@ -83,5 +85,5 @@ func (pool *VariablePool) Get(name string) (interface{}, error) {
 
 func (pool *VariablePool) Delete(name string) {
 	delete(pool.variables, name)
-	pool.logCollector.Debug(fmt.Sprintf("Deleted variable \"%s\"", name))
+	pool.logger.Info().Msgf("Deleted variable '%s'", name)
 }

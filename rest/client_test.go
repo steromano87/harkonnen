@@ -3,9 +3,9 @@ package rest_test
 import (
 	"context"
 	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"harkonnen/log"
 	"harkonnen/rest"
 	"harkonnen/shooter"
 	"harkonnen/telemetry"
@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"testing"
 )
 
@@ -26,7 +27,7 @@ type ClientTestSuite struct {
 
 func (suite *ClientTestSuite) SetupTest() {
 	suite.settings = rest.NewSettings()
-	suite.context = shooter.NewContext(context.Background())
+	suite.context = shooter.NewContext(context.Background(), zerolog.New(os.Stdout))
 	suite.client = rest.NewClient(suite.context, suite.settings)
 
 	handler := http.NewServeMux()
@@ -69,7 +70,6 @@ func (suite *ClientTestSuite) TestNewSampler() {
 
 func (suite *ClientTestSuite) TestGetRequest() {
 	suite.client.Execute(rest.Get(suite.testServer.URL, nil))
-	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.ErrorLevel))
 
 	collectedSamples := suite.context.SampleCollector().Flush()
 
@@ -105,7 +105,6 @@ func (suite *ClientTestSuite) TestGetRequestWithQueryString() {
 	parameters.Set("key1", "value1")
 	parameters.Set("key2", "1")
 	suite.client.Execute(rest.Get(suite.testServer.URL, &parameters))
-	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.ErrorLevel))
 
 	collectedSamples := suite.context.SampleCollector().Flush()
 
@@ -138,7 +137,6 @@ func (suite *ClientTestSuite) TestGetRequestWithQueryString() {
 
 func (suite *ClientTestSuite) TestPostNoBody() {
 	suite.client.Execute(rest.Post(suite.testServer.URL, "", nil))
-	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.ErrorLevel))
 
 	collectedSamples := suite.context.SampleCollector().Flush()
 
@@ -171,7 +169,6 @@ func (suite *ClientTestSuite) TestPostNoBody() {
 
 func (suite *ClientTestSuite) TestPutNoBody() {
 	suite.client.Execute(rest.Put(suite.testServer.URL, "", nil))
-	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.ErrorLevel))
 
 	collectedSamples := suite.context.SampleCollector().Flush()
 
@@ -203,7 +200,6 @@ func (suite *ClientTestSuite) TestPutNoBody() {
 
 func (suite *ClientTestSuite) TestPatchNoBody() {
 	suite.client.Execute(rest.Patch(suite.testServer.URL, "", nil))
-	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.ErrorLevel))
 
 	collectedSamples := suite.context.SampleCollector().Flush()
 
@@ -235,7 +231,6 @@ func (suite *ClientTestSuite) TestPatchNoBody() {
 
 func (suite *ClientTestSuite) TestDeleteNoBody() {
 	suite.client.Execute(rest.Delete(suite.testServer.URL, "", nil))
-	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.ErrorLevel))
 
 	collectedSamples := suite.context.SampleCollector().Flush()
 
@@ -269,7 +264,6 @@ func (suite *ClientTestSuite) TestPostFormRequest() {
 	values := url.Values{}
 	values.Set("test", "example")
 	suite.client.Execute(rest.PostForm(suite.testServer.URL, values))
-	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.ErrorLevel))
 
 	collectedSamples := suite.context.SampleCollector().Flush()
 
@@ -305,10 +299,6 @@ func (suite *ClientTestSuite) TestRequestMalformedUrl() {
 	assert.Panics(suite.T(), func() {
 		suite.client.Execute(rest.Get(malformedUrl, nil))
 	})
-
-	errorList := suite.context.LogCollector().Flush(log.ErrorLevel)
-
-	assert.Equal(suite.T(), 1, len(errorList))
 }
 
 func (suite *ClientTestSuite) TestRequestInvalidPartialUrl() {
@@ -321,11 +311,6 @@ func (suite *ClientTestSuite) TestRequestInvalidPartialUrl() {
 	assert.Panics(suite.T(), func() {
 		suite.client.Execute(rest.Get(invalidPartialUrl, nil))
 	})
-
-	errorList := suite.context.LogCollector().Flush(log.ErrorLevel)
-	if assert.NotEmpty(suite.T(), errorList) {
-		assert.EqualValues(suite.T(), rest.ErrInvalidPartialUrl{Url: invalidPartialUrl}.Error(), errorList[0].Message)
-	}
 }
 
 func (suite *ClientTestSuite) TestRequestPartialMalformedUrl() {
@@ -338,9 +323,6 @@ func (suite *ClientTestSuite) TestRequestPartialMalformedUrl() {
 	assert.Panics(suite.T(), func() {
 		suite.client.Execute(rest.Get(malformedPartialUrl, nil))
 	})
-
-	errorList := suite.context.LogCollector().Flush(log.ErrorLevel)
-	assert.Equal(suite.T(), 1, len(errorList))
 }
 
 func (suite *ClientTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() {
@@ -350,8 +332,6 @@ func (suite *ClientTestSuite) TestRequestWithRedirect_WithoutRedirectSetting() {
 	suite.client.UpdateSettings(settings)
 
 	suite.client.Execute(rest.Get("/redirect", nil))
-
-	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.ErrorLevel))
 
 	collectedSamples := suite.context.SampleCollector().Flush()
 
@@ -376,8 +356,6 @@ func (suite *ClientTestSuite) TestRequestWithRedirect_WithRedirectSetting() {
 	suite.client.UpdateSettings(settings)
 
 	suite.client.Execute(rest.Get("/redirect", nil))
-
-	assert.Empty(suite.T(), suite.context.LogCollector().Flush(log.ErrorLevel))
 
 	collectedSamples := suite.context.SampleCollector().Flush()
 
