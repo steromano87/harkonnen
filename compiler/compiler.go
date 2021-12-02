@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"fmt"
-	"harkonnen/errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -100,7 +99,7 @@ func (compiler *Compiler) checkGoExecutable(manuallySetGoExecutable string) erro
 	// If path is manually defined, check if it exists
 	if manuallySetGoExecutable != "" {
 		if _, err := os.Stat(compiler.GoExecPath); os.IsNotExist(err) {
-			return errors.GoCompilerNotFound{ManuallySetPath: compiler.GoExecPath}
+			return ErrGoCompilerNotFound{ManuallySetPath: compiler.GoExecPath}
 		}
 
 		compiler.GoExecPath = manuallySetGoExecutable
@@ -115,12 +114,12 @@ func (compiler *Compiler) checkGoExecutable(manuallySetGoExecutable string) erro
 	case "linux", "freebsd", "darwin":
 		cmd = exec.Command("which go")
 	default:
-		return errors.UnsupportedOS{OSName: runtime.GOOS}
+		return ErrUnsupportedOS{OSName: runtime.GOOS}
 	}
 
 	output, err := compiler.executeCrossPlatformCommand(cmd)
 	if err != nil {
-		return errors.GoCompilerNotFound{}
+		return ErrGoCompilerNotFound{}
 	}
 
 	compiler.GoExecPath = string(output)
@@ -162,7 +161,7 @@ func (compiler *Compiler) doCompile(script *File) (string, error) {
 
 	output, err := compiler.executeCrossPlatformCommand(cmd)
 	if err != nil {
-		return "", errors.CompilationError{Message: string(output)}
+		return "", ErrCompilationFailure{Message: string(output)}
 	}
 
 	return path.Join(compiler.TempBuildCachePath, script.Hash+".so"), nil
@@ -185,7 +184,7 @@ func (compiler *Compiler) executeCrossPlatformCommand(command *exec.Cmd) ([]byte
 	case "linux", "freebsd", "darwin":
 		execCmd = exec.Command("sh", "-c", commandString)
 	default:
-		return []byte{}, errors.UnsupportedOS{OSName: runtime.GOOS}
+		return []byte{}, ErrUnsupportedOS{OSName: runtime.GOOS}
 	}
 
 	return execCmd.CombinedOutput()
