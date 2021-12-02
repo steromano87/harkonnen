@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"harkonnen/shooter"
 	"os"
 	"sync"
@@ -20,95 +21,111 @@ func (c SampleClient) GenerateError() {
 	c.Context.OnUnrecoverableError(errors.New("sample error"))
 }
 
-var setUpScript = func(ctx shooter.Context) error {
-	fmt.Println("Set Up script")
-	return nil
+type ShooterTestSuite struct {
+	suite.Suite
+	logger    zerolog.Logger
+	shooterID string
+
+	setUpScript         shooter.Script
+	mainScriptOne       shooter.Script
+	mainScriptTwo       shooter.Script
+	tearDownScript      shooter.Script
+	explicitErrorScript shooter.Script
+	implicitErrorScript shooter.Script
 }
 
-var mainScriptOne = func(ctx shooter.Context) error {
-	fmt.Println("Main script 1")
-	return nil
+func (suite *ShooterTestSuite) SetupTest() {
+	suite.shooterID = "1"
+	suite.logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+
+	suite.setUpScript = func(ctx shooter.Context) error {
+		fmt.Println("Set Up script")
+		return nil
+	}
+
+	suite.mainScriptOne = func(ctx shooter.Context) error {
+		fmt.Println("Main script 1")
+		return nil
+	}
+
+	suite.mainScriptTwo = func(ctx shooter.Context) error {
+		fmt.Println("Main script 2")
+		return nil
+	}
+
+	suite.tearDownScript = func(ctx shooter.Context) error {
+		fmt.Println("Tear Down Script")
+		return nil
+	}
+
+	suite.explicitErrorScript = func(ctx shooter.Context) error {
+		return fmt.Errorf("triggered error")
+	}
+
+	suite.implicitErrorScript = func(ctx shooter.Context) error {
+		client := SampleClient{Context: ctx}
+		fmt.Println("Before error generation")
+		client.GenerateError()
+		fmt.Println("After error generation")
+		return nil
+	}
 }
 
-var mainScriptTwo = func(ctx shooter.Context) error {
-	fmt.Println("Main script 2")
-	return nil
+func (suite *ShooterTestSuite) createContext() shooter.Context {
+	return shooter.NewContext(context.Background(), suite.logger, suite.shooterID)
 }
 
-var tearDownScript = func(ctx shooter.Context) error {
-	fmt.Println("Tear Down Script")
-	return nil
-}
-
-var scriptWithError = func(ctx shooter.Context) error {
-	return fmt.Errorf("triggered error")
-}
-
-var scriptWithImplicitError = func(ctx shooter.Context) error {
-	client := SampleClient{Context: ctx}
-	fmt.Println("Before error generation")
-	client.GenerateError()
-	fmt.Println("After error generation")
-	return nil
-}
-
-func TestShooter_Start(t *testing.T) {
-	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
+func (suite *ShooterTestSuite) TestStart() {
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{
-		ID:             "BaseSample",
-		Context:        testContext,
-		SetUpScript:    setUpScript,
-		MainScripts:    []shooter.Script{mainScriptOne, mainScriptTwo},
-		TearDownScript: tearDownScript,
+		Context:        suite.createContext(),
+		SetUpScript:    suite.setUpScript,
+		MainScripts:    []shooter.Script{suite.mainScriptOne, suite.mainScriptTwo},
+		TearDownScript: suite.tearDownScript,
 		MaxIterations:  3,
 		WaitGroup:      &wg,
 	}
 
 	wg.Add(1)
 	testShooter.Start()
-	assert.Equal(t, shooter.Running, testShooter.Status())
+	assert.Equal(suite.T(), shooter.Running, testShooter.Status())
 
 	wg.Wait()
-	assert.Equal(t, 3, testShooter.TotalIterations())
-	assert.Equal(t, testShooter.TotalIterations(), testShooter.SuccessfulIterations())
-	assert.Equal(t, shooter.Completed, testShooter.Status())
+	assert.Equal(suite.T(), 3, testShooter.TotalIterations())
+	assert.Equal(suite.T(), testShooter.TotalIterations(), testShooter.SuccessfulIterations())
+	assert.Equal(suite.T(), shooter.Completed, testShooter.Status())
 }
 
-func TestShooter_StartWithError(t *testing.T) {
-	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
+func (suite *ShooterTestSuite) TestExplicitErrorInMainLoop() {
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{
-		ID:             "BaseSample",
-		Context:        testContext,
-		SetUpScript:    setUpScript,
-		MainScripts:    []shooter.Script{mainScriptOne, scriptWithError},
-		TearDownScript: tearDownScript,
+		Context:        suite.createContext(),
+		SetUpScript:    suite.setUpScript,
+		MainScripts:    []shooter.Script{suite.mainScriptOne, suite.explicitErrorScript},
+		TearDownScript: suite.tearDownScript,
 		MaxIterations:  3,
 		WaitGroup:      &wg,
 	}
 
 	wg.Add(1)
 	testShooter.Start()
-	assert.Equal(t, shooter.Running, testShooter.Status())
+	assert.Equal(suite.T(), shooter.Running, testShooter.Status())
 
 	wg.Wait()
-	assert.Equal(t, 3, testShooter.TotalIterations())
-	assert.Equal(t, 0, testShooter.SuccessfulIterations())
-	assert.Equal(t, shooter.Completed, testShooter.Status())
+	assert.Equal(suite.T(), 3, testShooter.TotalIterations())
+	assert.Equal(suite.T(), 0, testShooter.SuccessfulIterations())
+	assert.Equal(suite.T(), shooter.Completed, testShooter.Status())
 }
 
-func TestShooter_ScriptWithImplicitError(t *testing.T) {
-	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
+func (suite *ShooterTestSuite) TestImplicitErrorInMainLoop() {
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{
-		ID:             "BaseShooter",
-		Context:        testContext,
+		Context:        suite.createContext(),
 		SetUpScript:    nil,
-		MainScripts:    []shooter.Script{scriptWithImplicitError, mainScriptTwo},
+		MainScripts:    []shooter.Script{suite.implicitErrorScript, suite.mainScriptTwo},
 		TearDownScript: nil,
 		MaxIterations:  3,
 		WaitGroup:      &wg,
@@ -116,23 +133,21 @@ func TestShooter_ScriptWithImplicitError(t *testing.T) {
 
 	wg.Add(1)
 	testShooter.Start()
-	assert.Equal(t, shooter.Running, testShooter.Status())
+	assert.Equal(suite.T(), shooter.Running, testShooter.Status())
 
 	wg.Wait()
-	assert.Equal(t, 3, testShooter.TotalIterations())
-	assert.Equal(t, 0, testShooter.SuccessfulIterations())
-	assert.Equal(t, shooter.Completed, testShooter.Status())
+	assert.Equal(suite.T(), 3, testShooter.TotalIterations())
+	assert.Equal(suite.T(), 0, testShooter.SuccessfulIterations())
+	assert.Equal(suite.T(), shooter.Completed, testShooter.Status())
 }
 
-func TestShooter_SetUpScriptWithImplicitError(t *testing.T) {
-	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
+func (suite *ShooterTestSuite) TestImplicitErrorInSetupScript() {
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{
-		ID:             "BaseShooter",
-		Context:        testContext,
-		SetUpScript:    scriptWithImplicitError,
-		MainScripts:    []shooter.Script{mainScriptOne, mainScriptTwo},
+		Context:        suite.createContext(),
+		SetUpScript:    suite.implicitErrorScript,
+		MainScripts:    []shooter.Script{suite.mainScriptOne, suite.mainScriptTwo},
 		TearDownScript: nil,
 		MaxIterations:  3,
 		WaitGroup:      &wg,
@@ -140,34 +155,36 @@ func TestShooter_SetUpScriptWithImplicitError(t *testing.T) {
 
 	wg.Add(1)
 	testShooter.Start()
-	assert.Equal(t, shooter.Running, testShooter.Status())
+	assert.Equal(suite.T(), shooter.Running, testShooter.Status())
 
 	wg.Wait()
-	assert.Equal(t, 0, testShooter.TotalIterations())
-	assert.Equal(t, 0, testShooter.SuccessfulIterations())
-	assert.Equal(t, shooter.Error, testShooter.Status())
+	assert.Equal(suite.T(), 0, testShooter.TotalIterations())
+	assert.Equal(suite.T(), 0, testShooter.SuccessfulIterations())
+	assert.Equal(suite.T(), shooter.Error, testShooter.Status())
 }
 
-func TestShooter_TearDownScriptWithImplicitError(t *testing.T) {
-	testContext := shooter.NewContext(context.Background(), zerolog.New(os.Stdout).With().Timestamp().Logger())
+func (suite *ShooterTestSuite) TestImplicitErrorInTearDownScript() {
 	wg := sync.WaitGroup{}
 
 	testShooter := shooter.Shooter{
-		ID:             "BaseShooter",
-		Context:        testContext,
+		Context:        suite.createContext(),
 		SetUpScript:    nil,
-		MainScripts:    []shooter.Script{mainScriptOne, mainScriptTwo},
-		TearDownScript: scriptWithImplicitError,
+		MainScripts:    []shooter.Script{suite.mainScriptOne, suite.mainScriptTwo},
+		TearDownScript: suite.implicitErrorScript,
 		MaxIterations:  3,
 		WaitGroup:      &wg,
 	}
 
 	wg.Add(1)
 	testShooter.Start()
-	assert.Equal(t, shooter.Running, testShooter.Status())
+	assert.Equal(suite.T(), shooter.Running, testShooter.Status())
 
 	wg.Wait()
-	assert.Equal(t, 3, testShooter.TotalIterations())
-	assert.Equal(t, 3, testShooter.SuccessfulIterations())
-	assert.Equal(t, shooter.Error, testShooter.Status())
+	assert.Equal(suite.T(), 3, testShooter.TotalIterations())
+	assert.Equal(suite.T(), 3, testShooter.SuccessfulIterations())
+	assert.Equal(suite.T(), shooter.Error, testShooter.Status())
+}
+
+func TestShooterTestSuite(t *testing.T) {
+	suite.Run(t, new(ShooterTestSuite))
 }

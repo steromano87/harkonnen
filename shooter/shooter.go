@@ -1,22 +1,16 @@
 package shooter
 
 import (
-	"github.com/rs/zerolog"
-	"harkonnen/telemetry"
 	"sync"
 )
 
 type Shooter struct {
-	ID             string
-	Context        Context
+	Context
 	SetUpScript    Script
 	MainScripts    []Script
 	TearDownScript Script
 	MaxIterations  int
 	WaitGroup      *sync.WaitGroup
-
-	SampleCollector *telemetry.SampleCollector
-	VariablePool    *VariablePool
 
 	status               Status
 	totalIterations      int
@@ -42,11 +36,6 @@ func (s *Shooter) TotalIterations() int {
 
 func (s *Shooter) SuccessfulIterations() int {
 	return s.successfulIterations
-}
-
-func (s *Shooter) Logger() *zerolog.Logger {
-	shooterLogger := s.Context.Logger().With().Str("ID", s.ID).Logger()
-	return &shooterLogger
 }
 
 func (s *Shooter) run() {
@@ -83,7 +72,7 @@ func (s *Shooter) executeSetupScript() {
 		s.Logger().Info().Msg("Setup script execution completed")
 
 		if err != nil {
-			s.Context.OnUnrecoverableError(err)
+			s.OnUnrecoverableError(err)
 		}
 	}
 }
@@ -117,7 +106,7 @@ func (s *Shooter) executeMainScriptsLoop() {
 		err := mainScript(s.Context)
 		// Exit from inner loop in case of error while executing one of the scripts
 		if err != nil {
-			s.Context.OnUnrecoverableError(err)
+			s.OnUnrecoverableError(err)
 		}
 	}
 
@@ -137,14 +126,14 @@ func (s *Shooter) executeTearDownScript() {
 		s.Logger().Info().Msg("Teardown script execution completed")
 
 		if err != nil {
-			s.Context.OnUnrecoverableError(err)
+			s.OnUnrecoverableError(err)
 		}
 	}
 }
 
 func (s *Shooter) handleSetUpTearDownPanic() {
 	if err := recover(); err != nil {
-		s.Logger().Error().Stack().Err(err.(error)).Msg("Encountered error during setup/teardown sequence")
+		s.Logger().Error().Stack().Err(err.(error)).Msg("Encountered error during setup/teardown sequence, stopping execution")
 		s.status = Error
 		return
 	}
@@ -152,7 +141,7 @@ func (s *Shooter) handleSetUpTearDownPanic() {
 
 func (s *Shooter) handleMainLoopPanic() {
 	if err := recover(); err != nil {
-		s.Logger().Error().Stack().Err(err.(error)).Msg("Encountered error during main loop")
+		s.Logger().Error().Stack().Err(err.(error)).Msg("Encountered error during main loop, continuing with next iteration")
 		s.totalIterations++
 		return
 	}
