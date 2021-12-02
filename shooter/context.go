@@ -8,17 +8,19 @@ import (
 
 type Context struct {
 	context.Context
+	id              string
 	variablePool    *VariablePool
 	sampleCollector *telemetry.SampleCollector
 	logger          *zerolog.Logger
 	cancelFunc      context.CancelFunc
 }
 
-func NewContext(parent context.Context, parentLogger zerolog.Logger) Context {
+func NewContext(parent context.Context, parentLogger zerolog.Logger, shooterID string) Context {
 	output := new(Context)
 	output.sampleCollector = new(telemetry.SampleCollector)
-	newLogger := parentLogger.With().Str("component", "Shooter").Logger()
+	newLogger := parentLogger.With().Str("component", "Shooter").Str("ID", shooterID).Logger()
 	output.logger = &newLogger
+	output.id = shooterID
 	output.variablePool = NewVariablePool(output.logger)
 	output.Context, output.cancelFunc = context.WithCancel(parent)
 
@@ -37,6 +39,10 @@ func (c *Context) VariablePool() *VariablePool {
 	return c.variablePool
 }
 
+func (c *Context) ID() string {
+	return c.id
+}
+
 func (c *Context) Cancel() {
 	c.cancelFunc()
 }
@@ -46,6 +52,6 @@ func (c *Context) NextLoop() <-chan struct{} {
 }
 
 func (c *Context) OnUnrecoverableError(err error) {
-	c.logger.Error().Caller().Stack().Err(err).Msg("Caught an unrecoverable error")
+	c.logger.Error().Stack().Err(err).Msg("Caught an unrecoverable error")
 	panic(err)
 }
