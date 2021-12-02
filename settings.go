@@ -1,7 +1,7 @@
-package harkonnen
+package main
 
-import "harkonnen/httpp"
+import "harkonnen/rest"
 
 type Settings struct {
-	Http httpp.Settings `mapstructure:"http"`
+	Http rest.Settings `mapstructure:"http"`
 }
