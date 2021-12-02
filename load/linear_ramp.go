@@ -1,4 +1,4 @@
-package injector
+package load
 
 import (
 	"gopkg.in/yaml.v3"
@@ -7,18 +7,18 @@ import (
 )
 
 type LinearRamp struct {
-	LoadUnits    int           `yaml:"load_units"`
+	Shooters     int           `yaml:"shooters"`
 	InitialDelay time.Duration `yaml:"initial_delay"`
 	RampUpTime   time.Duration `yaml:"ramp_up_time"`
 	SustainTime  time.Duration `yaml:"sustain_time"`
 	RampDownTime time.Duration `yaml:"ramp_down_time"`
 }
 
-func NewLinearRamp(loadUnits int, initialDelay string, rampUpTime string, sustainTime string, rampDownTime string) (LinearRamp, error) {
+func ParseLinearRamp(shooters int, initialDelay string, rampUpTime string, sustainTime string, rampDownTime string) (LinearRamp, error) {
 	output := new(LinearRamp)
 	var err error
 
-	output.LoadUnits = loadUnits
+	output.Shooters = shooters
 
 	output.InitialDelay, err = time.ParseDuration(initialDelay)
 	if err != nil {
@@ -43,7 +43,7 @@ func NewLinearRamp(loadUnits int, initialDelay string, rampUpTime string, sustai
 	return *output, nil
 }
 
-func (r *LinearRamp) At(elapsed time.Duration) int {
+func (r LinearRamp) At(elapsed time.Duration) int {
 	if elapsed < r.InitialDelay {
 		return 0
 	}
@@ -53,13 +53,13 @@ func (r *LinearRamp) At(elapsed time.Duration) int {
 	if partialElapsed < r.RampUpTime {
 		return int(
 			math.Round(
-				float64(r.LoadUnits) * (float64(partialElapsed.Nanoseconds()) / float64(r.RampUpTime.Nanoseconds()))))
+				float64(r.Shooters) * (float64(partialElapsed.Nanoseconds()) / float64(r.RampUpTime.Nanoseconds()))))
 	}
 
 	partialElapsed = partialElapsed - r.RampUpTime
 
 	if partialElapsed < r.SustainTime {
-		return r.LoadUnits
+		return r.Shooters
 	}
 
 	partialElapsed = partialElapsed - r.SustainTime
@@ -67,19 +67,19 @@ func (r *LinearRamp) At(elapsed time.Duration) int {
 	if partialElapsed < r.RampDownTime {
 		return int(
 			math.Round(
-				float64(r.LoadUnits) * float64(r.RampDownTime.Nanoseconds()-partialElapsed.Nanoseconds()) / float64(r.RampDownTime.Nanoseconds())))
+				float64(r.Shooters) * float64(r.RampDownTime.Nanoseconds()-partialElapsed.Nanoseconds()) / float64(r.RampDownTime.Nanoseconds())))
 	}
 
 	return 0
 }
 
-func (r *LinearRamp) TotalDuration() time.Duration {
+func (r LinearRamp) TotalDuration() time.Duration {
 	return r.InitialDelay + r.RampUpTime + r.SustainTime + r.RampDownTime
 }
 
 func (r *LinearRamp) UnmarshalYAML(value *yaml.Node) error {
 	var temp struct {
-		LoadUnits    int    `yaml:"load_units"`
+		Shooters     int    `yaml:"shooters"`
 		InitialDelay string `yaml:"initial_delay"`
 		RampUpTime   string `yaml:"ramp_up_time"`
 		SustainTime  string `yaml:"sustain_time"`
@@ -91,7 +91,7 @@ func (r *LinearRamp) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	var err error
-	r.LoadUnits = temp.LoadUnits
+	r.Shooters = temp.Shooters
 	r.InitialDelay, err = time.ParseDuration(temp.InitialDelay)
 	if err != nil {
 		return err

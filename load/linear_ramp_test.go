@@ -1,23 +1,23 @@
-package injector_test
+package load_test
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-	"harkonnen/injector"
+	"harkonnen/load"
 	"testing"
 	"time"
 )
 
-var loadUnits = 8
+var shooters = 8
 var initialDelay = "5s"
 var rampUpTime = "4s"
 var sustainTime = "10s"
 var rampDownTime = "2s"
-var testRamp, _ = injector.NewLinearRamp(loadUnits, initialDelay, rampUpTime, sustainTime, rampDownTime)
+var testRamp, _ = load.ParseLinearRamp(shooters, initialDelay, rampUpTime, sustainTime, rampDownTime)
 
 func TestRampCreation(t *testing.T) {
-	assert.IsType(t, injector.LinearRamp{}, testRamp)
+	assert.IsType(t, load.LinearRamp{}, testRamp)
 }
 
 func TestRamp_At_BeforeStart(t *testing.T) {
@@ -59,7 +59,7 @@ func TestRamp_Marshalling(t *testing.T) {
 	output, err := yaml.Marshal(testRamp)
 
 	if assert.NoError(t, err) {
-		assert.Contains(t, string(output), fmt.Sprintf("load_units: %d", loadUnits))
+		assert.Contains(t, string(output), fmt.Sprintf("shooters: %d", shooters))
 		assert.Contains(t, string(output), fmt.Sprintf("initial_delay: %s", initialDelay))
 		assert.Contains(t, string(output), fmt.Sprintf("ramp_up_time: %s", rampUpTime))
 		assert.Contains(t, string(output), fmt.Sprintf("sustain_time: %s", sustainTime))
@@ -70,11 +70,11 @@ func TestRamp_Marshalling(t *testing.T) {
 func TestRamp_UnmarshalYAML(t *testing.T) {
 	output, _ := yaml.Marshal(testRamp)
 
-	var outputRamp injector.LinearRamp
+	var outputRamp load.LinearRamp
 	err := yaml.Unmarshal(output, &outputRamp)
 
 	if assert.NoError(t, err) {
-		assert.Equal(t, loadUnits, outputRamp.LoadUnits)
+		assert.Equal(t, shooters, outputRamp.Shooters)
 
 		parsedInitialDelay, _ := time.ParseDuration(initialDelay)
 		parsedRampUpTime, _ := time.ParseDuration(rampUpTime)

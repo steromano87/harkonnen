@@ -1,8 +1,8 @@
-package injector
+package load
 
 import "time"
 
-type LoadProfile interface {
+type Profile interface {
 	At(elapsed time.Duration) int
 	TotalDuration() time.Duration
 }

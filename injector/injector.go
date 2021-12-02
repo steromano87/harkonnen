@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
+	"harkonnen/load"
 	"harkonnen/shooter"
 	"io"
 	"sync"
@@ -19,7 +20,7 @@ type Injector struct {
 	SetUpScript    shooter.Script
 	MainScripts    []shooter.Script
 	TearDownScript shooter.Script
-	loadProfiles   []LoadProfile
+	loadProfiles   []load.Profile
 
 	shooters  []shooter.Shooter
 	waitGroup sync.WaitGroup
@@ -38,7 +39,7 @@ func New(ctx context.Context, logWriter io.Writer) *Injector {
 	return output
 }
 
-func (i *Injector) AddLoadProfile(profile LoadProfile) {
+func (i *Injector) AddLoadProfile(profile load.Profile) {
 	i.loadProfiles = append(i.loadProfiles, profile)
 }
 
