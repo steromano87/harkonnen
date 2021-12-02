@@ -150,13 +150,19 @@ func (compiler *Compiler) dumpScriptInFakeMainFile(scriptContent []byte) error {
 }
 
 func (compiler *Compiler) doCompile(script *File) (string, error) {
-	// TODO: add a method to determine the correct extension for plugins according to OS
+	pluginExtension, err := compiler.pluginExtension()
+
+	if err != nil {
+		return "", err
+	}
+
 	cmd := exec.Command(
 		fmt.Sprintf(
-			"cd %s && %s build -buildmode=plugin -o %s.so %s",
+			"cd %s && %s build -buildmode=plugin -o %s%s %s",
 			compiler.TempBuildCachePath,
 			compiler.GoExecPath,
 			script.Hash,
+			pluginExtension,
 			FakeMainFileName))
 
 	output, err := compiler.executeCrossPlatformCommand(cmd)
@@ -164,7 +170,7 @@ func (compiler *Compiler) doCompile(script *File) (string, error) {
 		return "", ErrCompilationFailure{Message: string(output)}
 	}
 
-	return path.Join(compiler.TempBuildCachePath, script.Hash+".so"), nil
+	return path.Join(compiler.TempBuildCachePath, script.Hash+pluginExtension), nil
 }
 
 func (compiler *Compiler) moveCompiledScriptToCompiledScriptsFolder(compiledScriptPath string) (string, error) {
@@ -188,4 +194,17 @@ func (compiler *Compiler) executeCrossPlatformCommand(command *exec.Cmd) ([]byte
 	}
 
 	return execCmd.CombinedOutput()
+}
+
+func (compiler Compiler) pluginExtension() (string, error) {
+	switch runtime.GOOS {
+	case "windows":
+		return ".dll", nil
+	case "linux", "freebsd":
+		return ".so", nil
+	case "darwin":
+		return ".dylib", nil
+	default:
+		return "", ErrUnsupportedOS{OSName: runtime.GOOS}
+	}
 }
