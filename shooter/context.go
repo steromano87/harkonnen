@@ -18,7 +18,7 @@ type Context struct {
 func NewContext(parent context.Context, parentLogger zerolog.Logger, shooterID string) Context {
 	output := new(Context)
 	output.sampleCollector = new(telemetry.SampleCollector)
-	newLogger := parentLogger.With().Str("component", "Shooter").Str("ID", shooterID).Logger()
+	newLogger := parentLogger.With().Str("context", "Shooter").Str("ID", shooterID).Logger()
 	output.logger = &newLogger
 	output.id = shooterID
 	output.variablePool = NewVariablePool(output.logger)
@@ -52,6 +52,6 @@ func (c *Context) NextLoop() <-chan struct{} {
 }
 
 func (c *Context) OnUnrecoverableError(err error) {
-	c.logger.Error().Stack().Err(err).Msg("Caught an unrecoverable error")
+	c.logger.Warn().Err(err).Msg("Caught an unrecoverable error, stopping current script execution")
 	panic(err)
 }
