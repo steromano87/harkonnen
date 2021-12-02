@@ -183,7 +183,7 @@ func (compiler *Compiler) executeCrossPlatformCommand(command *exec.Cmd) ([]byte
 	case "windows":
 		execCmd = exec.Command("cmd", "/C", commandString)
 	case "linux", "freebsd", "darwin":
-		execCmd = exec.Command("bash", "-c", commandString)
+		execCmd = exec.Command("sh", "-c", commandString)
 	default:
 		return []byte{}, errors.UnsupportedOS{OSName: runtime.GOOS}
 	}
