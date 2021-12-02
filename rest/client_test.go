@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/pkgerrors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"harkonnen/rest"
@@ -23,11 +24,17 @@ type ClientTestSuite struct {
 	context    shooter.Context
 	client     *rest.Client
 	testServer *httptest.Server
+	logger     zerolog.Logger
+	shooterID  string
 }
 
 func (suite *ClientTestSuite) SetupTest() {
+	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	suite.settings = rest.NewSettings()
-	suite.context = shooter.NewContext(context.Background(), zerolog.New(os.Stdout))
+	suite.logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+	suite.shooterID = "1"
+	suite.context = shooter.NewContext(context.Background(), suite.logger, suite.shooterID)
 	suite.client = rest.NewClient(suite.context, suite.settings)
 
 	handler := http.NewServeMux()
