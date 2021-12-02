@@ -1,4 +1,4 @@
-package script
+package compiler
 
 import (
 	"crypto/md5"
@@ -7,15 +7,15 @@ import (
 	"os"
 )
 
-type CompilableFile struct {
+type File struct {
 	Path               string
 	Hash               string
 	MnemonicName       string
 	CompiledObjectPath string
 }
 
-func NewCompilableFile(path string, mnemonicName string) (*CompilableFile, error) {
-	script := new(CompilableFile)
+func NewCompilableFile(path string, mnemonicName string) (*File, error) {
+	script := new(File)
 
 	// Check if path exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -34,7 +34,7 @@ func NewCompilableFile(path string, mnemonicName string) (*CompilableFile, error
 	return script, nil
 }
 
-func (script CompilableFile) HasChanged() (bool, error) {
+func (script File) HasChanged() (bool, error) {
 	newHash, err := script.calculateHash()
 	if err != nil {
 		return true, err
@@ -43,7 +43,7 @@ func (script CompilableFile) HasChanged() (bool, error) {
 	return newHash != script.Hash, nil
 }
 
-func (script CompilableFile) calculateHash() (string, error) {
+func (script File) calculateHash() (string, error) {
 	file, err := os.Open(script.Path)
 	if err != nil {
 		return "", err

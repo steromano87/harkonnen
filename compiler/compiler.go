@@ -1,4 +1,4 @@
-package script
+package compiler
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ type Compiler struct {
 	GoVersion                 string
 	TempBuildCachePath        string
 	CompiledScriptsFolderPath string
-	CompiledScripts           []*CompilableFile
+	CompiledScripts           []*File
 }
 
 const (
@@ -50,7 +50,7 @@ func NewCompiler(goExecPath string, compiledScriptsFolderPath string) (*Compiler
 	return compiler, nil
 }
 
-func (compiler *Compiler) Compile(script *CompilableFile) error {
+func (compiler *Compiler) Compile(script *File) error {
 	var err error
 
 	// Create temporary build cache (to be deleted right after the build is done)
@@ -92,7 +92,7 @@ func (compiler *Compiler) Compile(script *CompilableFile) error {
 }
 
 func (compiler *Compiler) Clean() error {
-	compiler.CompiledScripts = []*CompilableFile{}
+	compiler.CompiledScripts = []*File{}
 	return os.RemoveAll(compiler.CompiledScriptsFolderPath)
 }
 
@@ -150,7 +150,7 @@ func (compiler *Compiler) dumpScriptInFakeMainFile(scriptContent []byte) error {
 	return ioutil.WriteFile(fakeMainPath, scriptContent, 0644)
 }
 
-func (compiler *Compiler) doCompile(script *CompilableFile) (string, error) {
+func (compiler *Compiler) doCompile(script *File) (string, error) {
 	// TODO: add a method to determine the correct extension for plugins according to OS
 	cmd := exec.Command(
 		fmt.Sprintf(
