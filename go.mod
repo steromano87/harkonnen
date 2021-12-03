@@ -1,4 +1,4 @@
-module harkonnen
+module github.com/steromano87/harkonnen
 
 go 1.16
 
