@@ -3,9 +3,9 @@ package shooter_test
 import (
 	"context"
 	"github.com/rs/zerolog"
+	"github.com/steromano87/harkonnen/shooter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"harkonnen/shooter"
 	"os"
 	"testing"
 )

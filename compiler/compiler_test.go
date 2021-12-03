@@ -2,8 +2,8 @@ package compiler_test
 
 import (
 	"github.com/Flaque/filet"
+	"github.com/steromano87/harkonnen/compiler"
 	"github.com/stretchr/testify/assert"
-	"harkonnen/compiler"
 	"os"
 	"testing"
 )
@@ -24,8 +24,10 @@ func TestCompiler_Compile(t *testing.T) {
 	fileContent := `
 	package main
 
-	func Test() string {
-		return "Hello world"
+	import "github.com/steromano87/harkonnen/shooter"
+
+	func Test(ctx shooter.Context) error {
+		return nil
 	}
 `
 

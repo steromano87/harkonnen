@@ -1,9 +1,9 @@
 package telemetry_test
 
 import (
+	"github.com/steromano87/harkonnen/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"harkonnen/telemetry"
 	"testing"
 	"time"
 )

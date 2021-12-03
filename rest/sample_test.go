@@ -1,8 +1,8 @@
 package rest_test
 
 import (
+	"github.com/steromano87/harkonnen/rest"
 	"github.com/stretchr/testify/assert"
-	"harkonnen/rest"
 	"testing"
 	"time"
 )

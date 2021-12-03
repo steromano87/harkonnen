@@ -3,7 +3,7 @@ package shooter
 import (
 	"context"
 	"github.com/rs/zerolog"
-	"harkonnen/telemetry"
+	"github.com/steromano87/harkonnen/telemetry"
 )
 
 type Context struct {

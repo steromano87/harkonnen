@@ -22,6 +22,7 @@ const (
 	BuildCachePrefix                 = "harkonnen-build-cache-"
 	DefaultCompiledScriptsFolderPath = "./runtime/build"
 	FakeMainFileName                 = "main.go"
+	HarkonnenPackageImportAddress    = "github.com/steromano87/harkonnen"
 )
 
 func NewCompiler(goExecPath string, compiledScriptsFolderPath string) (*Compiler, error) {
@@ -158,9 +159,10 @@ func (compiler *Compiler) doCompile(script *File) (string, error) {
 
 	cmd := exec.Command(
 		fmt.Sprintf(
-			"cd %s && %s build -buildmode=plugin -o %s%s %s",
+			"cd %[1]s && %[2]s get %[3]s && %[2]s build -buildmode=plugin -o %[4]s%[5]s %[6]s",
 			compiler.TempBuildCachePath,
 			compiler.GoExecPath,
+			HarkonnenPackageImportAddress,
 			script.Hash,
 			pluginExtension,
 			FakeMainFileName))

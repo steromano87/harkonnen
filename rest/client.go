@@ -2,7 +2,7 @@ package rest
 
 import (
 	"bytes"
-	"harkonnen/shooter"
+	"github.com/steromano87/harkonnen/shooter"
 	"io"
 	"io/ioutil"
 	"net/http"

@@ -2,9 +2,9 @@ package load_test
 
 import (
 	"fmt"
+	"github.com/steromano87/harkonnen/load"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-	"harkonnen/load"
 	"testing"
 	"time"
 )

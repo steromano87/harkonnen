@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"harkonnen/telemetry"
+	"github.com/steromano87/harkonnen/telemetry"
 	"net/url"
 	"time"
 )

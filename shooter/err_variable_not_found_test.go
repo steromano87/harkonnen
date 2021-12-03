@@ -1,8 +1,8 @@
 package shooter_test
 
 import (
+	"github.com/steromano87/harkonnen/shooter"
 	"github.com/stretchr/testify/assert"
-	"harkonnen/shooter"
 	"testing"
 )
 
