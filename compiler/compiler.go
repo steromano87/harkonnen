@@ -159,7 +159,10 @@ func (compiler *Compiler) doCompile(script *File) (string, error) {
 
 	cmd := exec.Command(
 		fmt.Sprintf(
-			"cd %[1]s && %[2]s get %[3]s && %[2]s build -buildmode=plugin -o %[4]s%[5]s %[6]s",
+			"cd %[1]s && "+
+				"%[2]s mod init harkonnen_script && "+
+				"%[2]s get %[3]s@master && "+
+				"%[2]s build -buildmode=plugin -o %[4]s%[5]s %[6]s",
 			compiler.TempBuildCachePath,
 			compiler.GoExecPath,
 			HarkonnenPackageImportAddress,
