@@ -1,4 +1,4 @@
-package main
+package harkonnen
 
 import "github.com/steromano87/harkonnen/rest"
 
