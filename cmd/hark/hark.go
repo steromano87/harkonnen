@@ -9,6 +9,7 @@ var application = &subcommands.DefaultApplication{
 	Name:  "hark",
 	Title: "Multi-protocol load testing tool",
 	Commands: []*subcommands.Command{
+		cmdInit,
 		subcommands.CmdHelp,
 		cmdVersion,
 	},
