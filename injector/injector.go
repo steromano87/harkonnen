@@ -2,6 +2,7 @@ package injector
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -9,6 +10,7 @@ import (
 	"github.com/steromano87/harkonnen/load"
 	"github.com/steromano87/harkonnen/shooter"
 	"io"
+	"net"
 	"sync"
 	"time"
 )
@@ -26,17 +28,38 @@ type Injector struct {
 	waitGroup sync.WaitGroup
 
 	cancelFunc context.CancelFunc
+
+	settings    Settings
+	tcpListener net.Listener
 }
 
-func New(ctx context.Context, logWriter io.Writer) *Injector {
+func New(ctx context.Context, logWriter io.Writer, settings Settings) *Injector {
 	output := new(Injector)
 	output.Context, output.cancelFunc = context.WithCancel(ctx)
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	output.Logger = zerolog.New(logWriter).With().Timestamp().Logger()
+	output.settings = settings
 
 	return output
+}
+
+func (i *Injector) Start() {
+	// Start TCP server
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", i.settings.BindAddress, i.settings.Port))
+	if err != nil {
+		panic(err)
+	}
+	i.tcpListener = listener
+
+}
+
+func (i *Injector) Stop() {
+	err := i.tcpListener.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (i *Injector) AddLoadProfile(profile load.Profile) {
